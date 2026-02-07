@@ -16,8 +16,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from api.server import APIServer
 from config import load_config
+from engines.ad_clicks import AdClickEngine
 from engines.browse import BrowseEngine
 from engines.dns import DNSEngine
+from engines.research import ResearchEngine
 from engines.search import SearchEngine
 from scheduler import Scheduler
 from session import SessionManager
@@ -51,8 +53,12 @@ async def main():
         scheduler.register_engine("search", SearchEngine(session_manager=session_mgr))
     if config.get("enable_browse_noise", True):
         scheduler.register_engine("browse", BrowseEngine(session_manager=session_mgr))
+    if config.get("enable_ad_clicks", False):
+        scheduler.register_engine("ad_clicks", AdClickEngine(session_manager=session_mgr))
     if config.get("enable_dns_noise", True):
         scheduler.register_engine("dns", DNSEngine())
+    if config.get("enable_research_noise", False):
+        scheduler.register_engine("research", ResearchEngine(session_manager=session_mgr))
 
     # API server for Ingress UI
     api = APIServer(
