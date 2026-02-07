@@ -12,6 +12,7 @@ Endpoints:
 """
 
 import logging
+import pathlib
 from typing import Optional
 
 from aiohttp import web
@@ -39,7 +40,12 @@ class APIServer:
         self._app.router.add_post("/api/intensity", self._handle_intensity)
         self._app.router.add_get("/api/config", self._handle_config)
         # Serve static UI files
-        self._app.router.add_static("/", path="/app/web", name="static", show_index=True)
+        self._app.router.add_get("/", self._handle_index)
+        self._app.router.add_static("/", path="/app/web", name="static")
+
+    async def _handle_index(self, request: web.Request) -> web.Response:
+        index_path = pathlib.Path("/app/web/index.html")
+        return web.FileResponse(index_path)
 
     async def start(self):
         self._runner = web.AppRunner(self._app)
