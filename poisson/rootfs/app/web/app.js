@@ -6,7 +6,9 @@
 (function () {
   "use strict";
 
-  const API = ".";
+  // Derive base URL from the script's own URL — this always goes through
+  // the HA ingress proxy, so API calls will too.
+  const API = document.currentScript.src.replace(/\/[^/]*$/, "");
   let pollInterval = null;
 
   // --- DOM references ---
