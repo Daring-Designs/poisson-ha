@@ -1,0 +1,7 @@
+#!/usr/bin/with-contenv bashio
+# shellcheck shell=bash
+
+bashio::log.info "Starting Poisson traffic noise generator..."
+
+cd /app || exit 1
+exec python3 main.py

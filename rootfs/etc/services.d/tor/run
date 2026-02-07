@@ -1,0 +1,11 @@
+#!/usr/bin/with-contenv bashio
+# shellcheck shell=bash
+
+# Only start Tor if enabled in config
+if bashio::config.true "enable_tor"; then
+    bashio::log.info "Starting Tor daemon..."
+    exec tor -f /etc/torrc
+else
+    bashio::log.info "Tor is disabled in configuration. Sleeping."
+    exec sleep infinity
+fi

@@ -1,0 +1,39 @@
+name: "Poisson"
+description: "Traffic noise generator. Make mass surveillance expensive and unreliable."
+version: "0.1.0"
+slug: "poisson"
+url: "https://github.com/Daring-Designs/poisson"
+arch:
+  - amd64
+  - aarch64
+  - armv7
+ingress: true
+ingress_port: 8099
+panel_icon: "mdi:fish"
+panel_title: "Poisson"
+startup: "application"
+init: false
+options:
+  intensity: "medium"
+  enable_search_noise: true
+  enable_browse_noise: true
+  enable_ad_clicks: false
+  enable_tor: false
+  enable_dns_noise: true
+  enable_research_noise: false
+  max_bandwidth_mbps: 10
+  max_concurrent_sessions: 2
+  tor_relay_mode: false
+  schedule_mode: "always"
+schema:
+  intensity: "list(low|medium|high|paranoid)"
+  enable_search_noise: "bool"
+  enable_browse_noise: "bool"
+  enable_ad_clicks: "bool"
+  enable_tor: "bool"
+  enable_dns_noise: "bool"
+  enable_research_noise: "bool"
+  max_bandwidth_mbps: "int(1,100)"
+  max_concurrent_sessions: "int(1,5)"
+  tor_relay_mode: "bool"
+  schedule_mode: "list(always|home_only|away_only|custom)"

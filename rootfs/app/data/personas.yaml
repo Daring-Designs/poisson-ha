@@ -1,0 +1,130 @@
+personas:
+  - name: chrome_windows_1080p
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    viewport:
+      width: 1920
+      height: 1080
+    platform: "Win32"
+    languages: ["en-US", "en"]
+
+  - name: chrome_windows_1440p
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"
+    viewport:
+      width: 2560
+      height: 1440
+    platform: "Win32"
+    languages: ["en-US", "en"]
+
+  - name: chrome_windows_laptop
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    viewport:
+      width: 1366
+      height: 768
+    platform: "Win32"
+    languages: ["en-US", "en"]
+
+  - name: firefox_windows
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0"
+    viewport:
+      width: 1920
+      height: 1080
+    platform: "Win32"
+    languages: ["en-US", "en"]
+
+  - name: firefox_mac
+    user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:133.0) Gecko/20100101 Firefox/133.0"
+    viewport:
+      width: 1440
+      height: 900
+    platform: "MacIntel"
+    languages: ["en-US", "en"]
+
+  - name: chrome_mac_retina
+    user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    viewport:
+      width: 1512
+      height: 982
+    platform: "MacIntel"
+    languages: ["en-US", "en"]
+
+  - name: safari_mac
+    user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
+    viewport:
+      width: 1440
+      height: 900
+    platform: "MacIntel"
+    languages: ["en-US", "en"]
+
+  - name: chrome_linux
+    user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    viewport:
+      width: 1366
+      height: 768
+    platform: "Linux x86_64"
+    languages: ["en-US", "en", "de"]
+
+  - name: firefox_linux
+    user_agent: "Mozilla/5.0 (X11; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0"
+    viewport:
+      width: 1920
+      height: 1080
+    platform: "Linux x86_64"
+    languages: ["en-US", "en"]
+
+  - name: edge_windows
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0"
+    viewport:
+      width: 1536
+      height: 864
+    platform: "Win32"
+    languages: ["en-US", "en"]
+
+  - name: chrome_android_pixel
+    user_agent: "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
+    viewport:
+      width: 412
+      height: 915
+    platform: "Linux armv81"
+    languages: ["en-US", "en"]
+
+  - name: chrome_android_samsung
+    user_agent: "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36"
+    viewport:
+      width: 360
+      height: 780
+    platform: "Linux armv81"
+    languages: ["en-US", "en"]
+
+  - name: safari_iphone_15
+    user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+    viewport:
+      width: 393
+      height: 852
+    platform: "iPhone"
+    languages: ["en-US", "en"]
+
+  - name: safari_ipad
+    user_agent: "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+    viewport:
+      width: 1024
+      height: 1366
+    platform: "iPad"
+    languages: ["en-US", "en"]
+
+  - name: chrome_windows_de
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    viewport:
+      width: 1920
+      height: 1080
+    platform: "Win32"
+    languages: ["de-DE", "de", "en"]
+    timezone: "Europe/Berlin"
+
+  - name: chrome_windows_es
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    viewport:
+      width: 1366
+      height: 768
+    platform: "Win32"
+    languages: ["es-ES", "es", "en"]
+    timezone: "Europe/Madrid"

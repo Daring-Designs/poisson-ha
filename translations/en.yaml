@@ -1,0 +1,48 @@
+configuration:
+  intensity:
+    name: Intensity
+    description: >-
+      Controls the base rate of noise generation.
+      Low: ~18 events/hour. Medium: ~60. High: ~150. Paranoid: ~300.
+  enable_search_noise:
+    name: Search Engine Noise
+    description: Generate fake search queries to Google, Bing, DuckDuckGo, and Yahoo.
+  enable_browse_noise:
+    name: Website Browsing Noise
+    description: Visit random websites across news, shopping, entertainment, and more.
+  enable_ad_clicks:
+    name: Ad Click Engine
+    description: Click on advertisements to pollute ad tracking profiles.
+  enable_tor:
+    name: Tor Traffic
+    description: >-
+      Route some traffic through Tor and browse .onion sites.
+      Requires understanding of Tor implications.
+  enable_dns_noise:
+    name: DNS Noise
+    description: >-
+      Resolve random domains to pollute ISP DNS logs.
+      Lightweight — no browser needed.
+  enable_research_noise:
+    name: Research Noise
+    description: >-
+      Browse privacy tools, legal resources, and government databases.
+      Makes "interesting" browsing patterns common.
+  max_bandwidth_mbps:
+    name: Max Bandwidth (Mbps)
+    description: Maximum bandwidth the noise generator can use.
+  max_concurrent_sessions:
+    name: Max Concurrent Sessions
+    description: Maximum number of simultaneous browser sessions.
+  tor_relay_mode:
+    name: Tor Relay Mode
+    description: >-
+      Run as a Tor relay, routing other people's traffic through your connection.
+      This provides plausible deniability but uses more bandwidth.
+      Only enable if you understand the implications.
+  schedule_mode:
+    name: Schedule Mode
+    description: >-
+      When to generate noise.
+      Always: 24/7. Home Only: when someone is home.
+      Away Only: when no one is home. Custom: use HA automations.

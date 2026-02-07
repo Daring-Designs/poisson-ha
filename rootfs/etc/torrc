@@ -1,0 +1,11 @@
+# Poisson Tor Configuration
+# Minimal config for SOCKS proxy usage
+
+SocksPort 9050
+Log notice stdout
+DataDirectory /var/lib/tor
+
+# Connection limits to be respectful of resources
+MaxCircuitDirtiness 600
+CircuitBuildTimeout 30
+NumEntryGuards 3

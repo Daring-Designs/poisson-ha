@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poisson — Traffic Noise Generator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <h1>🐟 Poisson</h1>
+      <span id="status-badge" class="badge badge-running">Running</span>
+    </div>
+    <div class="header-right">
+      <span id="uptime" class="meta">Uptime: --</span>
+      <span id="persona" class="meta">Persona: --</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="controls">
+      <div class="control-group">
+        <label>Intensity</label>
+        <div class="intensity-selector" id="intensity-selector">
+          <button data-level="low" class="intensity-btn">Low</button>
+          <button data-level="medium" class="intensity-btn active">Medium</button>
+          <button data-level="high" class="intensity-btn">High</button>
+          <button data-level="paranoid" class="intensity-btn">Paranoid</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <label>Engines</label>
+        <div id="engine-toggles" class="engine-toggles"></div>
+      </div>
+    </section>
+
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-sessions">0</div>
+        <div class="stat-label">Sessions Today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-requests">0</div>
+        <div class="stat-label">Requests Today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-bandwidth">0 MB</div>
+        <div class="stat-label">Bandwidth Used</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-active">0</div>
+        <div class="stat-label">Active Sessions</div>
+      </div>
+    </section>
+
+    <section class="activity-section">
+      <h2>Live Activity</h2>
+      <div id="activity-feed" class="activity-feed">
+        <div class="activity-empty">Waiting for activity...</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

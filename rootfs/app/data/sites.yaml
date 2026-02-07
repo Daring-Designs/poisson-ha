@@ -1,0 +1,186 @@
+categories:
+  news_left:
+    - url: https://www.cnn.com
+      weight: 1.0
+    - url: https://www.msnbc.com
+      weight: 0.8
+    - url: https://www.nytimes.com
+      weight: 0.9
+    - url: https://www.washingtonpost.com
+      weight: 0.8
+    - url: https://www.theguardian.com
+      weight: 0.7
+    - url: https://www.huffpost.com
+      weight: 0.5
+
+  news_right:
+    - url: https://www.foxnews.com
+      weight: 1.0
+    - url: https://www.dailywire.com
+      weight: 0.7
+    - url: https://www.breitbart.com
+      weight: 0.5
+    - url: https://www.nationalreview.com
+      weight: 0.6
+    - url: https://www.washingtontimes.com
+      weight: 0.5
+
+  news_center:
+    - url: https://apnews.com
+      weight: 1.0
+    - url: https://www.reuters.com
+      weight: 1.0
+    - url: https://www.npr.org
+      weight: 0.8
+    - url: https://www.pbs.org/newshour
+      weight: 0.6
+    - url: https://www.csmonitor.com
+      weight: 0.5
+
+  news_international:
+    - url: https://www.aljazeera.com
+      weight: 0.9
+    - url: https://www.bbc.co.uk
+      weight: 1.0
+    - url: https://www.dw.com
+      weight: 0.7
+    - url: https://www.france24.com
+      weight: 0.6
+    - url: https://www.scmp.com
+      weight: 0.5
+    - url: https://www.japantimes.co.jp
+      weight: 0.4
+    - url: https://www.thehindu.com
+      weight: 0.4
+
+  shopping:
+    - url: https://www.amazon.com
+      weight: 1.0
+    - url: https://www.etsy.com
+      weight: 0.7
+    - url: https://www.walmart.com
+      weight: 0.8
+    - url: https://www.ebay.com
+      weight: 0.7
+    - url: https://www.target.com
+      weight: 0.6
+    - url: https://www.bestbuy.com
+      weight: 0.6
+    - url: https://www.wayfair.com
+      weight: 0.4
+    - url: https://www.zappos.com
+      weight: 0.3
+    - url: https://www.homedepot.com
+      weight: 0.5
+    - url: https://www.ikea.com
+      weight: 0.5
+
+  tech:
+    - url: https://news.ycombinator.com
+      weight: 0.9
+    - url: https://www.theverge.com
+      weight: 0.8
+    - url: https://arstechnica.com
+      weight: 0.8
+    - url: https://www.wired.com
+      weight: 0.7
+    - url: https://techcrunch.com
+      weight: 0.7
+    - url: https://www.tomshardware.com
+      weight: 0.5
+    - url: https://www.anandtech.com
+      weight: 0.4
+
+  forums:
+    - url: https://www.reddit.com
+      weight: 1.0
+    - url: https://stackoverflow.com
+      weight: 0.8
+    - url: https://www.quora.com
+      weight: 0.5
+    - url: https://news.ycombinator.com
+      weight: 0.7
+
+  entertainment:
+    - url: https://www.youtube.com
+      weight: 1.0
+    - url: https://www.imdb.com
+      weight: 0.6
+    - url: https://www.rottentomatoes.com
+      weight: 0.4
+    - url: https://open.spotify.com
+      weight: 0.5
+    - url: https://www.twitch.tv
+      weight: 0.4
+
+  education:
+    - url: https://en.wikipedia.org
+      weight: 1.0
+    - url: https://scholar.google.com
+      weight: 0.6
+    - url: https://www.khanacademy.org
+      weight: 0.5
+    - url: https://www.coursera.org
+      weight: 0.4
+    - url: https://arxiv.org
+      weight: 0.3
+
+  government:
+    - url: https://www.usa.gov
+      weight: 0.5
+    - url: https://www.foia.gov
+      weight: 0.4
+    - url: https://www.sec.gov
+      weight: 0.3
+    - url: https://usaspending.gov
+      weight: 0.3
+    - url: https://www.congress.gov
+      weight: 0.4
+    - url: https://www.regulations.gov
+      weight: 0.3
+
+  privacy_tools:
+    - url: https://signal.org
+      weight: 1.0
+    - url: https://www.torproject.org
+      weight: 0.8
+    - url: https://proton.me
+      weight: 0.7
+    - url: https://tails.net
+      weight: 0.5
+    - url: https://www.whonix.org
+      weight: 0.4
+    - url: https://mullvad.net
+      weight: 0.6
+
+  health:
+    - url: https://www.webmd.com
+      weight: 0.8
+    - url: https://www.mayoclinic.org
+      weight: 0.7
+    - url: https://www.nih.gov
+      weight: 0.5
+    - url: https://www.healthline.com
+      weight: 0.6
+
+  finance:
+    - url: https://finance.yahoo.com
+      weight: 0.8
+    - url: https://www.bloomberg.com
+      weight: 0.6
+    - url: https://www.cnbc.com
+      weight: 0.7
+    - url: https://www.investopedia.com
+      weight: 0.5
+    - url: https://www.bankrate.com
+      weight: 0.4
+
+  travel:
+    - url: https://www.tripadvisor.com
+      weight: 0.7
+    - url: https://www.booking.com
+      weight: 0.6
+    - url: https://www.kayak.com
+      weight: 0.5
+    - url: https://www.lonelyplanet.com
+      weight: 0.4
