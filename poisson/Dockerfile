@@ -2,18 +2,19 @@ ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
 # Install system dependencies
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
-    py3-pip \
-    py3-numpy \
+    python3-pip \
+    python3-numpy \
     tor \
     chromium \
-    nss \
-    freetype \
-    harfbuzz \
+    libnss3 \
+    libfreetype6 \
+    libharfbuzz0b \
     ca-certificates \
-    ttf-freefont \
-    font-noto
+    fonts-freefont-ttf \
+    fonts-noto \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements.txt /tmp/
@@ -23,7 +24,7 @@ RUN pip3 install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
 # Install Playwright browsers (use system Chromium to save space)
 ENV PLAYWRIGHT_BROWSERS_PATH=/usr/lib/playwright
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
-ENV CHROMIUM_PATH=/usr/bin/chromium-browser
+ENV CHROMIUM_PATH=/usr/bin/chromium
 
 # Copy application
 COPY rootfs /
