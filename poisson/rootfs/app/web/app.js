@@ -6,7 +6,7 @@
 (function () {
   "use strict";
 
-  const API = window.location.pathname.replace(/\/$/, "");
+  const API = ".";
   let pollInterval = null;
 
   // --- DOM references ---
