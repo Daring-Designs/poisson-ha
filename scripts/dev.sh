@@ -12,7 +12,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-APP_DIR="rootfs/app"
+APP_DIR="poisson/rootfs/app"
 
 case "${1:-help}" in
   test)
@@ -37,7 +37,7 @@ case "${1:-help}" in
     echo "Building Docker image..."
     docker build \
       --build-arg BUILD_FROM="ghcr.io/home-assistant/amd64-base:3.19" \
-      -t poisson:dev .
+      -t poisson:dev poisson/
     ;;
 
   shell)

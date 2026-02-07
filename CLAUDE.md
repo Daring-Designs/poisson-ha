@@ -5,21 +5,21 @@ to poison surveillance profiling and data broker collection.
 
 ## Key Architecture
 
-- **Timing engine** (`rootfs/app/patterns/timing.py` + `rootfs/app/scheduler.py`):
+- **Timing engine** (`poisson/rootfs/app/patterns/timing.py` + `poisson/rootfs/app/scheduler.py`):
   The core. Uses Poisson process for event timing, Markov chains for session
   modeling, and obsession tracking for deep-dive patterns. This must produce
   timing indistinguishable from real human browsing.
 
-- **Session manager** (`rootfs/app/session.py`): Manages headless Chromium via
+- **Session manager** (`poisson/rootfs/app/session.py`): Manages headless Chromium via
   Playwright with per-session persona rotation and realistic interaction.
 
-- **Engines** (`rootfs/app/engines/`): Pluggable traffic generators — search,
+- **Engines** (`poisson/rootfs/app/engines/`): Pluggable traffic generators — search,
   browse, DNS. Each implements `BaseEngine.execute()`.
 
-- **Config** (`rootfs/app/config.py`): Reads from HA `/data/options.json`,
+- **Config** (`poisson/rootfs/app/config.py`): Reads from HA `/data/options.json`,
   env vars, or defaults. Safe defaults: Tor and research noise are OFF.
 
-- **API** (`rootfs/app/api/server.py`): aiohttp server on port 8099 for
+- **API** (`poisson/rootfs/app/api/server.py`): aiohttp server on port 8099 for
   Ingress UI and HA sensor data.
 
 ## Development
