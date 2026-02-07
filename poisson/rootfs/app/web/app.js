@@ -1,14 +1,14 @@
 /**
  * Poisson — Ingress UI
  * Lightweight dashboard with live activity feed.
+ *
+ * Uses /papi/ prefix (not /api/) to avoid collision with HA's own
+ * /api/ namespace which its service worker intercepts.
  */
 
 (function () {
   "use strict";
 
-  // Derive base URL from the script's own URL — this always goes through
-  // the HA ingress proxy, so API calls will too.
-  const API = document.currentScript.src.replace(/\/[^/]*$/, "");
   let pollInterval = null;
 
   // --- DOM references ---
@@ -38,7 +38,7 @@
 
   async function fetchJSON(path, opts) {
     try {
-      const res = await fetch(API + path, opts);
+      const res = await fetch(path, opts);
       if (!res.ok) return null;
       return await res.json();
     } catch (e) {
@@ -48,7 +48,7 @@
 
   // --- Status polling ---
   async function updateStatus() {
-    const status = await fetchJSON("/api/status");
+    const status = await fetchJSON("papi/status");
     if (!status) {
       statusBadge.textContent = "Error";
       statusBadge.className = "badge badge-error";
@@ -67,7 +67,7 @@
   }
 
   async function updateStats() {
-    const data = await fetchJSON("/api/stats");
+    const data = await fetchJSON("papi/stats");
     if (!data) return;
 
     statSessions.textContent = data.sessions_today;
@@ -77,7 +77,7 @@
   }
 
   async function updateEngines() {
-    const data = await fetchJSON("/api/engines");
+    const data = await fetchJSON("papi/engines");
     if (!data || !data.engines) return;
 
     engineToggles.innerHTML = "";
@@ -94,7 +94,7 @@
   }
 
   async function updateActivity() {
-    const data = await fetchJSON("/api/activity?count=50");
+    const data = await fetchJSON("papi/activity?count=50");
     if (!data || !data.activity || data.activity.length === 0) return;
 
     activityFeed.innerHTML = "";
@@ -117,12 +117,12 @@
 
   // --- Actions ---
   async function toggleEngine(name) {
-    await fetchJSON("/api/engines/" + name + "/toggle", { method: "POST" });
+    await fetchJSON("papi/engines/" + name + "/toggle", { method: "POST" });
     updateEngines();
   }
 
   async function setIntensity(level) {
-    await fetchJSON("/api/intensity", {
+    await fetchJSON("papi/intensity", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ intensity: level }),

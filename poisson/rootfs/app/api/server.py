@@ -1,14 +1,16 @@
 from __future__ import annotations
 """Local API server for the Ingress UI and HA sensor integration.
 
-Endpoints:
-- GET /api/status — overall status
-- GET /api/stats — detailed statistics
-- GET /api/activity — recent activity feed
-- GET /api/engines — engine status and toggles
-- POST /api/engines/{name}/toggle — enable/disable an engine
-- POST /api/intensity — change intensity level
-- GET /api/config — current configuration
+Endpoints use /papi/ prefix (not /api/) to avoid collision with HA's
+own /api/ namespace which its service worker intercepts.
+
+- GET /papi/status — overall status
+- GET /papi/stats — detailed statistics
+- GET /papi/activity — recent activity feed
+- GET /papi/engines — engine status and toggles
+- POST /papi/engines/{name}/toggle — enable/disable an engine
+- POST /papi/intensity — change intensity level
+- GET /papi/config — current configuration
 """
 
 import logging
@@ -32,13 +34,13 @@ class APIServer:
         self._setup_routes()
 
     def _setup_routes(self):
-        self._app.router.add_get("/api/status", self._handle_status)
-        self._app.router.add_get("/api/stats", self._handle_stats)
-        self._app.router.add_get("/api/activity", self._handle_activity)
-        self._app.router.add_get("/api/engines", self._handle_engines)
-        self._app.router.add_post("/api/engines/{name}/toggle", self._handle_engine_toggle)
-        self._app.router.add_post("/api/intensity", self._handle_intensity)
-        self._app.router.add_get("/api/config", self._handle_config)
+        self._app.router.add_get("/papi/status", self._handle_status)
+        self._app.router.add_get("/papi/stats", self._handle_stats)
+        self._app.router.add_get("/papi/activity", self._handle_activity)
+        self._app.router.add_get("/papi/engines", self._handle_engines)
+        self._app.router.add_post("/papi/engines/{name}/toggle", self._handle_engine_toggle)
+        self._app.router.add_post("/papi/intensity", self._handle_intensity)
+        self._app.router.add_get("/papi/config", self._handle_config)
         # Serve static UI files
         self._app.router.add_get("/", self._handle_index)
         self._app.router.add_static("/", path="/app/web", name="static")
