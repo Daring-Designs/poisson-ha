@@ -45,7 +45,9 @@ class APIServer:
 
     async def _handle_index(self, request: web.Request) -> web.Response:
         index_path = pathlib.Path("/app/web/index.html")
-        return web.FileResponse(index_path)
+        resp = web.FileResponse(index_path)
+        resp.headers["Cache-Control"] = "no-cache"
+        return resp
 
     async def start(self):
         self._runner = web.AppRunner(self._app)
