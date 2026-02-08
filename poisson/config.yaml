@@ -7,7 +7,6 @@ url: "https://github.com/Daring-Designs/poisson"
 arch:
   - amd64
   - aarch64
-  - armv7
 ingress: true
 ingress_port: 8099
 panel_icon: "mdi:fish"
