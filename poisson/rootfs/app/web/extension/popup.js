@@ -126,6 +126,10 @@
       // Auto-refresh stats every 5 seconds while popup is open
       refreshTimer = setInterval(refreshStatus, 5000);
     } else {
+      // Pre-fill the URL if we have one saved from a previous session
+      if (status.poissonUrl) {
+        serverUrlInput.value = status.poissonUrl;
+      }
       showSetup();
       // Show any error from a previous auth attempt
       if (status.lastAuthError) {
@@ -200,7 +204,7 @@
   disconnectBtn.addEventListener("click", function () {
     chrome.runtime.sendMessage({ type: "disconnect" }, function () {
       showSetup();
-      serverUrlInput.value = "";
+      // Keep the URL pre-filled so the user just has to click Sign In again
     });
   });
 

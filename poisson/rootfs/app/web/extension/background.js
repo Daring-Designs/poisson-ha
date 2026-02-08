@@ -652,8 +652,7 @@
         accessToken: "",
         refreshToken: "",
         tokenExpiry: 0,
-        poissonUrl: "",
-        haUrl: "",
+        // Keep poissonUrl and haUrl so the user doesn't have to re-enter them
         apiKey: "",
         lastAuthError: "",
       });
