@@ -86,6 +86,35 @@ Each session runs headless Chromium via Playwright with rotating browser persona
 - **Away Only**: Only when no one is home
 - **Custom**: Control via HA automations
 
+## Browser Extension
+
+Poisson includes an optional Chrome extension that generates noise from your **real browser** — making decoy traffic even harder to distinguish from your actual browsing.
+
+### What It Does
+
+- Opens background tabs to random websites at realistic Poisson-distributed intervals
+- Generates searches, page visits, and ad clicks
+- Closes tabs after a simulated reading delay
+- Collects your browser fingerprint so the server can match headless sessions to your real browser profile
+
+### Setup
+
+1. Download the extension from the Poisson dashboard (Settings tab)
+2. Install it in Chrome (or any Chromium-based browser) via `chrome://extensions` → Load unpacked
+3. Click the Poisson icon in the toolbar and enter your Home Assistant URL
+4. Sign in via Home Assistant OAuth — the extension never sees your password
+
+### How It Connects
+
+The extension authenticates with your HA instance via OAuth2 and receives tasks from the add-on server. It periodically checks in with a heartbeat, reports daily stats, and requests the next noise action to perform.
+
+### Privacy & Security
+
+- **OAuth2 auth** — no passwords stored, tokens auto-refresh
+- **No data collection** — never reads page content, form data, cookies, or browsing history
+- **No third parties** — only talks to YOUR Home Assistant instance
+- **Open source** — fully auditable, same repo as the add-on
+
 ## Dashboard
 
 Access the Poisson dashboard from the Home Assistant sidebar. It shows:
