@@ -34,6 +34,12 @@ configuration:
   max_concurrent_sessions:
     name: Max Concurrent Sessions
     description: Maximum number of simultaneous browser sessions.
+  match_browser_fingerprint:
+    name: Browser Fingerprint Matching
+    description: >-
+      Use your real browser's fingerprint (user agent, screen size, language)
+      for noise traffic so it blends with your actual browsing. Makes it
+      harder for trackers to distinguish real from fake traffic.
   tor_relay_mode:
     name: Tor Relay Mode
     description: >-
