@@ -12,6 +12,14 @@ own /api/ namespace which its service worker intercepts.
 - POST /papi/intensity — change intensity level
 - GET /papi/config — current configuration
 - POST /papi/fingerprint — receive real browser viewport dimensions
+
+Extension endpoints (auth via Bearer token):
+- POST /papi/ext/register — extension registration + initial fingerprint
+- POST /papi/ext/heartbeat — extension alive check
+- POST /papi/ext/fingerprint — deep fingerprint data
+- GET /papi/ext/next-task — get next noise action for extension
+- GET /papi/ext/download — download extension zip
+- GET /papi/ext/status — extension connection status for dashboard
 """
 
 import logging
@@ -20,6 +28,7 @@ from typing import Optional
 
 from aiohttp import web
 
+from api.ext_handler import ExtensionManager
 from patterns.personas import Persona, PersonaRotator
 
 logger = logging.getLogger(__name__)
@@ -35,6 +44,7 @@ class APIServer:
         self._port = port
         self._persona_rotator = persona_rotator
         self._fingerprint_captured = False
+        self._ext = ExtensionManager(config, persona_rotator)
         self._app = web.Application()
         self._runner: Optional[web.AppRunner] = None
         self._setup_routes()
@@ -48,6 +58,13 @@ class APIServer:
         self._app.router.add_post("/papi/intensity", self._handle_intensity)
         self._app.router.add_get("/papi/config", self._handle_config)
         self._app.router.add_post("/papi/fingerprint", self._handle_fingerprint)
+        # Extension endpoints
+        self._app.router.add_post("/papi/ext/register", self._handle_ext_register)
+        self._app.router.add_post("/papi/ext/heartbeat", self._handle_ext_heartbeat)
+        self._app.router.add_post("/papi/ext/fingerprint", self._handle_ext_fingerprint)
+        self._app.router.add_get("/papi/ext/next-task", self._handle_ext_next_task)
+        self._app.router.add_get("/papi/ext/download", self._handle_ext_download)
+        self._app.router.add_get("/papi/ext/status", self._handle_ext_status)
         # Serve static UI files
         self._app.router.add_get("/", self._handle_index)
         self._app.router.add_static("/", path="/app/web", name="static")
@@ -210,3 +227,55 @@ class APIServer:
             k: v for k, v in self._config.items()
             if not k.startswith("_")
         })
+
+    # --- Extension endpoints ---
+
+    def _ext_auth(self, request: web.Request) -> bool:
+        """Validate extension Bearer token."""
+        auth = request.headers.get("Authorization", "")
+        if not auth.startswith("Bearer "):
+            return False
+        token = auth[7:]
+        return self._ext.validate_token(token)
+
+    async def _handle_ext_register(self, request: web.Request) -> web.Response:
+        if not self._ext_auth(request):
+            return web.json_response({"error": "Unauthorized"}, status=401)
+        data = await request.json()
+        result = self._ext.register(data)
+        return web.json_response(result)
+
+    async def _handle_ext_heartbeat(self, request: web.Request) -> web.Response:
+        if not self._ext_auth(request):
+            return web.json_response({"error": "Unauthorized"}, status=401)
+        data = await request.json()
+        result = self._ext.heartbeat(data)
+        return web.json_response(result)
+
+    async def _handle_ext_fingerprint(self, request: web.Request) -> web.Response:
+        if not self._ext_auth(request):
+            return web.json_response({"error": "Unauthorized"}, status=401)
+        data = await request.json()
+        result = self._ext.store_fingerprint(data)
+        return web.json_response(result)
+
+    async def _handle_ext_next_task(self, request: web.Request) -> web.Response:
+        if not self._ext_auth(request):
+            return web.json_response({"error": "Unauthorized"}, status=401)
+        task = self._ext.generate_task()
+        return web.json_response(task)
+
+    async def _handle_ext_download(self, request: web.Request) -> web.Response:
+        zip_path = pathlib.Path("/app/web/extension.zip")
+        if not zip_path.exists():
+            return web.json_response({"error": "Extension not packaged"}, status=404)
+        return web.FileResponse(
+            zip_path,
+            headers={
+                "Content-Disposition": "attachment; filename=poisson-extension.zip",
+                "Content-Type": "application/zip",
+            },
+        )
+
+    async def _handle_ext_status(self, request: web.Request) -> web.Response:
+        return web.json_response(self._ext.get_status())

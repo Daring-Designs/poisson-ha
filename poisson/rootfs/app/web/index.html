@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Poisson — Traffic Noise Generator</title>
-  <link rel="stylesheet" href="style.css?v=0.1.5">
+  <link rel="stylesheet" href="style.css?v=0.2.0">
 </head>
 <body>
   <header>
@@ -55,6 +55,19 @@
       </div>
     </section>
 
+    <section class="extension-section">
+      <div class="extension-card">
+        <div class="extension-info">
+          <div class="extension-header">
+            <h3>Browser Extension</h3>
+            <span id="ext-status" class="badge badge-ext-off">Not Connected</span>
+          </div>
+          <p id="ext-detail" class="ext-detail">Generate noise from your real browser with logged-in sessions</p>
+        </div>
+        <button id="ext-setup-btn" class="ext-btn">Setup Guide</button>
+      </div>
+    </section>
+
     <section class="activity-section">
       <h2>Live Activity</h2>
       <div id="activity-feed" class="activity-feed">
@@ -63,6 +76,38 @@
     </section>
   </main>
 
-  <script src="app.js?v=0.1.5"></script>
+  <!-- Extension Setup Modal -->
+  <div id="ext-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Browser Extension Setup</h2>
+        <button id="modal-close" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-intro">
+          The Poisson browser extension generates noise traffic from your real browser,
+          using your actual cookies and fingerprint. This makes fake traffic indistinguishable
+          from your real browsing.
+        </p>
+        <ol class="setup-steps">
+          <li>
+            <a id="ext-download-link" href="papi/ext/download" class="ext-download-btn">Download Extension (.zip)</a>
+          </li>
+          <li>Extract the zip file to a folder on your computer</li>
+          <li>Open Chrome and go to <code>chrome://extensions</code></li>
+          <li>Enable <strong>Developer mode</strong> (toggle in top-right corner)</li>
+          <li>Click <strong>Load unpacked</strong> and select the extracted folder</li>
+          <li>Click the Poisson fish icon in your browser toolbar</li>
+          <li>
+            Enter your Home Assistant URL and a <strong>Long-Lived Access Token</strong>
+            <span class="step-hint">Create a token in HA &rarr; Profile &rarr; Long-Lived Access Tokens</span>
+          </li>
+          <li>Click <strong>Connect</strong> &mdash; you're done!</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=0.2.0"></script>
 </body>
 </html>

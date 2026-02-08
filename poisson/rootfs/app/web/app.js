@@ -149,9 +149,55 @@
     }
   });
 
+  // --- Extension status ---
+  var extStatus = document.getElementById("ext-status");
+  var extDetail = document.getElementById("ext-detail");
+  var extSetupBtn = document.getElementById("ext-setup-btn");
+  var extModal = document.getElementById("ext-modal");
+  var modalClose = document.getElementById("modal-close");
+
+  async function updateExtStatus() {
+    var data = await fetchJSON("papi/ext/status");
+    if (!data) return;
+
+    if (data.connected) {
+      extStatus.textContent = "Connected";
+      extStatus.className = "badge badge-ext-on";
+      var detail = "v" + (data.version || "?");
+      if (data.actions_completed > 0) {
+        detail += " \u2022 " + data.actions_completed + " actions";
+      }
+      if (data.has_fingerprint) {
+        detail += " \u2022 Fingerprint captured";
+      }
+      extDetail.textContent = detail;
+      extSetupBtn.textContent = "Setup Guide";
+    } else {
+      extStatus.textContent = "Not Connected";
+      extStatus.className = "badge badge-ext-off";
+      extDetail.textContent = "Generate noise from your real browser with logged-in sessions";
+      extSetupBtn.textContent = "Setup Guide";
+    }
+  }
+
+  // Modal logic
+  if (extSetupBtn && extModal) {
+    extSetupBtn.addEventListener("click", function () {
+      extModal.classList.remove("hidden");
+    });
+    modalClose.addEventListener("click", function () {
+      extModal.classList.add("hidden");
+    });
+    extModal.addEventListener("click", function (e) {
+      if (e.target === extModal) {
+        extModal.classList.add("hidden");
+      }
+    });
+  }
+
   // --- Polling loop ---
   async function poll() {
-    await Promise.all([updateStatus(), updateStats(), updateActivity(), updateEngines()]);
+    await Promise.all([updateStatus(), updateStats(), updateActivity(), updateEngines(), updateExtStatus()]);
   }
 
   // Report real viewport dimensions for fingerprint matching

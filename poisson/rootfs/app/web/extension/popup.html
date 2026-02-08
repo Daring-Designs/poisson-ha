@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poisson</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- Setup View -->
+  <div id="setup-view" class="view">
+    <div class="logo">Poisson</div>
+    <p class="subtitle">Connect to your Home Assistant add-on</p>
+
+    <div class="form-group">
+      <label for="server-url">Home Assistant URL</label>
+      <input type="url" id="server-url" placeholder="https://your-ha.example.com">
+    </div>
+
+    <div class="form-group">
+      <label for="token">Long-Lived Access Token</label>
+      <input type="password" id="token" placeholder="Paste your HA token here">
+      <span class="hint">Create one in HA &rarr; Profile &rarr; Long-Lived Access Tokens</span>
+    </div>
+
+    <button id="connect-btn" class="btn btn-primary">Connect</button>
+    <div id="connect-error" class="error hidden"></div>
+  </div>
+
+  <!-- Status View -->
+  <div id="status-view" class="view hidden">
+    <div class="header-row">
+      <div class="logo-small">Poisson</div>
+      <span id="conn-badge" class="badge badge-connected">Connected</span>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-value" id="stat-searches">0</div>
+        <div class="stat-label">Searches</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="stat-pages">0</div>
+        <div class="stat-label">Pages</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="stat-ads">0</div>
+        <div class="stat-label">Ad Clicks</div>
+      </div>
+    </div>
+
+    <div class="control-row">
+      <label class="toggle-label">
+        <span>Noise Generation</span>
+        <input type="checkbox" id="enabled-toggle" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="control-row">
+      <label class="intensity-label">Intensity</label>
+      <div class="intensity-selector" id="intensity-selector">
+        <button data-level="low" class="int-btn">Low</button>
+        <button data-level="medium" class="int-btn active">Med</button>
+        <button data-level="high" class="int-btn">High</button>
+        <button data-level="paranoid" class="int-btn">Max</button>
+      </div>
+    </div>
+
+    <button id="disconnect-btn" class="btn btn-secondary">Disconnect</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
