@@ -28,34 +28,102 @@ Settings → Add-ons → Add-on Store → ⋮ → Repositories → Add:
 https://github.com/Daring-Designs/poisson
 ```
 
-## What It Does
+## How It Works
 
-| Layer | Engine | Default | Description |
-|-------|--------|---------|-------------|
-| Commercial Pollution | Search | ON | Fake queries to Google, Bing, DuckDuckGo, Yahoo |
-| Commercial Pollution | Browse | ON | Visit news, shopping, tech, entertainment sites |
-| Commercial Pollution | DNS | ON | Resolve random domains to pollute ISP logs |
-| Ad Disruption | Ad Click | OFF | Click advertisements to poison ad profiles |
-| Pattern Disruption | Timing | AUTO | Poisson process + Markov chains for realistic timing |
-| Suspect Noise | Tor | OFF | Route traffic through Tor, browse .onion sites |
-| Suspect Noise | Research | OFF | Privacy tools, legal resources, government databases |
+Poisson uses a **Poisson process** (a mathematical model of random events) to generate traffic that looks like real human browsing. The timing engine produces bursty activity with natural quiet gaps — not the uniform, robotic patterns that automated tools typically create.
+
+Each session runs headless Chromium via Playwright with rotating browser personas, realistic scroll/mouse/typing behavior, and varied fingerprints to look like multiple real users on the network.
+
+### Traffic Layers
+
+**Layer 1: Commercial Profile Pollution** (enabled by default)
+- **Search Noise**: Sends queries to Google, Bing, DuckDuckGo, and Yahoo across many topics
+- **Browse Noise**: Visits websites across news, shopping, entertainment, tech, forums, and more
+- **DNS Noise**: Resolves random domains to pollute ISP DNS logs (lightweight, no browser needed)
+
+**Layer 2: Pattern Disruption** (automatic)
+- Activity at unusual hours
+- Varying pace (sometimes many requests, sometimes few)
+- Mixed device fingerprints suggest multiple users
+- No detectable periodicity
+
+**Layer 3: "Everyone's a Suspect"** (opt-in)
+- **Tor Traffic**: Route some traffic through Tor, browse .onion directories
+- **Research Noise**: Visit privacy tools, legal resources, government databases
+
+**Layer 4: Ad Click Engine** (opt-in)
+- Click on advertisements to pollute ad tracking profiles
 
 ## Configuration
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `intensity` | `medium` | low (~18/hr), medium (~60/hr), high (~150/hr), paranoid (~300/hr) |
-| `max_bandwidth_mb_per_hour` | `50` | Max MB per hour (rolling window) |
+| `intensity` | `medium` | Traffic rate: low, medium, high, paranoid |
+| `enable_search_noise` | `true` | Generate fake search queries |
+| `enable_browse_noise` | `true` | Visit random websites |
+| `enable_dns_noise` | `true` | DNS query noise |
+| `enable_ad_clicks` | `false` | Click on advertisements |
+| `enable_tor` | `false` | Tor traffic (requires understanding) |
+| `enable_research_noise` | `false` | Privacy/legal/government browsing |
+| `max_bandwidth_mb_per_hour` | `50` | Max MB of traffic per hour (rolling window) |
 | `max_concurrent_sessions` | `2` | Simultaneous browser sessions |
-| `schedule_mode` | `always` | always, home_only, away_only, custom |
+| `match_browser_fingerprint` | `true` | Rotate browser fingerprints per session |
+| `schedule_mode` | `always` | When to run: always, home_only, away_only, custom |
+
+### Intensity Levels
+
+| Level | Events/Hour | Use Case |
+|-------|-------------|----------|
+| **Low** | ~18 | Minimal resource usage, light noise |
+| **Medium** | ~60 | Good balance of noise and resources |
+| **High** | ~150 | Significant noise generation |
+| **Paranoid** | ~300 | Maximum noise — uses more bandwidth and CPU |
+
+### Schedule Modes
+
+- **Always**: Runs 24/7 (recommended — real humans browse at all hours)
+- **Home Only**: Only when someone is home (uses HA presence detection)
+- **Away Only**: Only when no one is home
+- **Custom**: Control via HA automations
+
+## Dashboard
+
+Access the Poisson dashboard from the Home Assistant sidebar. It shows:
+- Current status and uptime
+- Live activity feed
+- Engine toggles
+- Session and request statistics
+- Bandwidth usage
+
+## Sensors
+
+Poisson exposes sensors to Home Assistant for use in automations and dashboards:
+
+| Sensor | Description |
+|--------|-------------|
+| `sensor.poisson_status` | running / paused / error |
+| `sensor.poisson_sessions_today` | Browsing sessions generated today |
+| `sensor.poisson_requests_today` | Total HTTP requests made today |
+| `sensor.poisson_bandwidth_today` | MB of noise traffic today |
+
+## Resource Usage
+
+Poisson runs headless Chromium for browser-based engines. On typical HA hardware:
+
+- **RAM**: ~200-400 MB (depends on concurrent sessions)
+- **CPU**: Low average, occasional spikes during page loads
+- **Bandwidth**: Configurable, default 50 MB/hr cap
+- **Storage**: Minimal (~50 MB for the container)
 
 ## FAQ
 
-**Is this legal?** Yes. Poisson only visits public websites, makes search queries, resolves DNS, and optionally uses Tor — all legal activities.
+**Is this legal?** Yes. Poisson only performs legal activities: visiting public websites, making search queries, resolving DNS, and using Tor (legal in the US and most countries).
 
-**Will this slow my internet?** At default settings (medium, 50 MB/hr cap), impact is minimal. Adjust to match your connection.
+**Will this slow my internet?** At default settings (medium, 50 MB/hr cap), impact is minimal. Adjust the bandwidth limit and intensity to match your connection.
 
-**Does this actually work?** Mass surveillance depends on patterns being meaningful. Diverse, realistic noise raises the cost and lowers the accuracy of profiling. Same principle as radar chaff.
+**Does this actually work?** Mass surveillance depends on behavioral patterns being meaningful. When your network generates diverse, realistic noise, it raises the cost and lowers the accuracy of profiling. Same principle as chaff in radar: you don't need to be invisible, just indistinguishable.
+
+**What about HTTPS?** Poisson visits real websites over HTTPS. While the content is encrypted, the domains you visit (SNI), DNS queries, and traffic metadata are visible to your ISP. That's exactly what Poisson poisons.
 
 ## Contributing
 

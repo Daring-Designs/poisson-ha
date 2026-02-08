@@ -83,7 +83,7 @@ Poisson exposes several sensors to Home Assistant:
 Yes. Poisson only performs legal activities: visiting public websites, making search queries, resolving DNS, and using Tor (legal in the US and most countries).
 
 **Will this slow my internet?**
-At the default settings (medium intensity, 10 Mbps cap), the impact is minimal. You can adjust the bandwidth limit and intensity to match your connection.
+At the default settings (medium intensity, 50 MB/hr cap), the impact is minimal. You can adjust the bandwidth limit and intensity to match your connection.
 
 **Does this actually work?**
 Mass surveillance depends on behavioral patterns being meaningful. When your network generates diverse, realistic noise, it raises the cost and lowers the accuracy of profiling. It's the same principle as chaff in radar: you don't need to be invisible, just indistinguishable.
@@ -97,7 +97,7 @@ Poisson runs headless Chromium for browser-based engines. On typical HA hardware
 
 - **RAM**: ~200-400 MB (depends on concurrent sessions)
 - **CPU**: Low average, occasional spikes during page loads
-- **Bandwidth**: Configurable, default 10 Mbps cap
+- **Bandwidth**: Configurable, default 50 MB/hr cap
 - **Storage**: Minimal (~50 MB for the container)
 
 ## Credits
