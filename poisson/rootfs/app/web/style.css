@@ -41,8 +41,16 @@ header {
 }
 
 .header-left h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 1.3rem;
   font-weight: 600;
+}
+
+.header-logo {
+  width: 28px;
+  height: 28px;
 }
 
 .header-right {
