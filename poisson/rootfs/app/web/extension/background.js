@@ -59,12 +59,14 @@
   // Intensity levels — controls how often noise tabs are opened.
   // Lambda = average events per minute. Higher = more frequent noise.
   // These match the server-side values in patterns/timing.py.
+  // Note: chrome.alarms has a 1-minute minimum, so high/paranoid batch
+  // multiple tabs per alarm firing to reach the target rate.
   // -------------------------------------------------------------------
   var INTENSITY_LAMBDA = {
-    low: 0.3 / 60,       // ~18 events/hour
-    medium: 1.0 / 60,    // ~60 events/hour
-    high: 2.5 / 60,      // ~150 events/hour
-    paranoid: 5.0 / 60,  // ~300 events/hour
+    low: 0.3,       // ~18 events/hour
+    medium: 1.0,    // ~60 events/hour
+    high: 2.5,      // ~150 events/hour
+    paranoid: 5.0,  // ~300 events/hour
   };
 
   // -------------------------------------------------------------------
@@ -408,14 +410,29 @@
   // to randomize the delay between noise actions, making the timing
   // pattern look like natural human browsing rather than a fixed interval.
   //
-  // The delay is clamped to [1, 30] minutes because chrome.alarms
-  // requires a minimum 1 minute period.
+  // chrome.alarms has a 1-minute minimum. For intensities that want
+  // more than 1 event/minute, we store how many tasks to batch on
+  // the next alarm fire.
   // -------------------------------------------------------------------
+  var pendingBatchCount = 1;
+
   function scheduleNextNoise(intensity) {
     var lambda = INTENSITY_LAMBDA[intensity] || INTENSITY_LAMBDA.medium;
     // Exponential random variable: -ln(U) / lambda, where U ~ Uniform(0,1)
-    var delayMin = Math.max(1, Math.min(30, -Math.log(Math.random()) / lambda));
+    var delayMin = -Math.log(Math.random()) / lambda;
+
+    if (delayMin < 1) {
+      // Delay is sub-minute — batch multiple tasks into the next 1-min alarm.
+      // Count how many events would fit in 1 minute at this rate.
+      pendingBatchCount = Math.max(1, Math.round(lambda));
+      delayMin = 1;
+    } else {
+      pendingBatchCount = 1;
+      delayMin = Math.min(30, delayMin);
+    }
+
     chrome.alarms.create(ALARM_NAME, { delayInMinutes: delayMin });
+    console.log("[Poisson] Next noise in " + delayMin.toFixed(1) + " min (" + pendingBatchCount + " tasks)");
   }
 
   // -------------------------------------------------------------------
@@ -430,56 +447,75 @@
   // The extension does NOT read any content from the opened tabs.
   // It simply opens and closes them to generate network traffic.
   // -------------------------------------------------------------------
-  function executeNoiseTask(config) {
-    // Step 1: Get next task from YOUR server
+  function executeSingleNoiseTask(config, cb) {
     apiCall(config, "GET", "/papi/ext/next-task", null, function (err, task) {
       if (err || !task || !task.url) {
-        // If server unreachable, just schedule next attempt
-        scheduleNextNoise(config.intensity);
+        console.warn("[Poisson] Failed to get task:", err);
+        if (cb) cb();
         return;
       }
 
-      // Step 2: Open the URL in a background tab (not focused)
+      console.log("[Poisson] Opening noise tab:", task.type, task.url.substring(0, 60));
+
       chrome.tabs.create({ url: task.url, active: false }, function (tab) {
         if (chrome.runtime.lastError || !tab) {
-          scheduleNextNoise(config.intensity);
+          console.warn("[Poisson] Tab create failed:", chrome.runtime.lastError);
+          if (cb) cb();
           return;
         }
 
         var tabId = tab.id;
-        var delay = task.delay_ms || 8000; // Default 8 seconds
+        var delay = task.delay_ms || 8000;
 
-        // Step 3: Update local action counters
-        var stats = config.stats;
-        var today = new Date().toISOString().slice(0, 10);
-        if (stats.today !== today) {
-          stats = { searches: 0, pages: 0, ads: 0, today: today };
-        }
-        if (task.type === "search") stats.searches++;
-        else if (task.type === "ad_click") stats.ads++;
-        else stats.pages++;
-        saveStats(stats);
+        // Update local action counters (re-read from storage for accuracy)
+        chrome.storage.local.get(["stats"], function (data) {
+          var stats = data.stats || { searches: 0, pages: 0, ads: 0, today: "" };
+          var today = new Date().toISOString().slice(0, 10);
+          if (stats.today !== today) {
+            stats = { searches: 0, pages: 0, ads: 0, today: today };
+          }
+          if (task.type === "search") stats.searches++;
+          else if (task.type === "ad_click") stats.ads++;
+          else stats.pages++;
+          saveStats(stats);
+          console.log("[Poisson] Stats:", JSON.stringify(stats));
 
-        // Step 4: After the delay, close the tab and schedule next
-        setTimeout(function () {
-          // Report action completion to YOUR server
-          apiCall(config, "POST", "/papi/ext/heartbeat", {
-            stats: stats,
-            last_action: { type: task.type, url: task.url },
-          }, function () {});
+          setTimeout(function () {
+            apiCall(config, "POST", "/papi/ext/heartbeat", {
+              stats: stats,
+              last_action: { type: task.type, url: task.url },
+            }, function () {});
 
-          // Close the noise tab
-          chrome.tabs.remove(tabId, function () {
-            if (chrome.runtime.lastError) {
-              // Tab might already be closed by user — that's fine
-            }
-          });
+            chrome.tabs.remove(tabId, function () {
+              if (chrome.runtime.lastError) { /* tab already closed */ }
+            });
 
-          // Step 5: Schedule the next noise action
-          scheduleNextNoise(config.intensity);
-        }, delay);
+            if (cb) cb();
+          }, delay);
+        });
       });
     });
+  }
+
+  function executeNoiseTask(config) {
+    var count = pendingBatchCount || 1;
+    console.log("[Poisson] Executing " + count + " noise task(s)");
+    var completed = 0;
+
+    for (var i = 0; i < count; i++) {
+      // Stagger batch tasks so they don't all fire simultaneously
+      (function (idx) {
+        setTimeout(function () {
+          executeSingleNoiseTask(config, function () {
+            completed++;
+            // Schedule next round after the last task in the batch completes
+            if (completed >= count) {
+              scheduleNextNoise(config.intensity);
+            }
+          });
+        }, idx * 3000); // 3-second stagger between batch tasks
+      })(i);
+    }
   }
 
   // -------------------------------------------------------------------

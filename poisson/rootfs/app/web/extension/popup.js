@@ -104,6 +104,17 @@
   // the background service worker, the user reopens the popup and this
   // check sees hasAuth: true, switching to the status view.
   // -------------------------------------------------------------------
+  var refreshTimer = null;
+
+  function refreshStatus() {
+    chrome.runtime.sendMessage({ type: "get-status" }, function (status) {
+      if (chrome.runtime.lastError || !status) return;
+      if (status.poissonUrl && status.hasAuth) {
+        updateStatusUI(status);
+      }
+    });
+  }
+
   chrome.runtime.sendMessage({ type: "get-status" }, function (status) {
     if (chrome.runtime.lastError || !status) {
       showSetup();
@@ -112,6 +123,8 @@
     if (status.poissonUrl && status.hasAuth) {
       showStatus();
       updateStatusUI(status);
+      // Auto-refresh stats every 5 seconds while popup is open
+      refreshTimer = setInterval(refreshStatus, 5000);
     } else {
       showSetup();
       // Show any error from a previous auth attempt
