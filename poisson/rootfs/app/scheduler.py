@@ -183,6 +183,8 @@ class Scheduler:
         for engine_name in preferred:
             if engine_name in self._engines:
                 engine = self._engines[engine_name]
+                if not engine.enabled:
+                    continue
                 try:
                     await engine.execute(
                         action=state,

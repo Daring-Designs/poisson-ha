@@ -44,17 +44,17 @@ async def main():
     session_mgr = SessionManager(config)
     scheduler = Scheduler(config)
 
-    # Register enabled engines
-    if config.get("enable_search_noise", True):
-        scheduler.register_engine("search", SearchEngine(session_manager=session_mgr))
-    if config.get("enable_browse_noise", True):
-        scheduler.register_engine("browse", BrowseEngine(session_manager=session_mgr))
-    if config.get("enable_ad_clicks", False):
-        scheduler.register_engine("ad_clicks", AdClickEngine(session_manager=session_mgr))
-    if config.get("enable_dns_noise", True):
-        scheduler.register_engine("dns", DNSEngine())
-    if config.get("enable_research_noise", False):
-        scheduler.register_engine("research", ResearchEngine(session_manager=session_mgr))
+    # Register all engines — disabled ones still show in UI for toggling
+    engines = [
+        ("search", SearchEngine(session_manager=session_mgr), config.get("enable_search_noise", True)),
+        ("browse", BrowseEngine(session_manager=session_mgr), config.get("enable_browse_noise", True)),
+        ("ad_clicks", AdClickEngine(session_manager=session_mgr), config.get("enable_ad_clicks", False)),
+        ("dns", DNSEngine(), config.get("enable_dns_noise", True)),
+        ("research", ResearchEngine(session_manager=session_mgr), config.get("enable_research_noise", False)),
+    ]
+    for name, engine, enabled in engines:
+        engine.enabled = enabled
+        scheduler.register_engine(name, engine)
 
     # API server for Ingress UI (pass persona rotator for fingerprint matching)
     api = APIServer(
