@@ -101,16 +101,12 @@ class ExtensionManager:
     def validate_token(self, token: str) -> bool:
         """Validate the extension's auth token.
 
-        For local add-on use, we accept any non-empty token and store it
-        on first registration. Subsequent requests must use the same token.
+        HA's ingress proxy already authenticates requests before they reach
+        the add-on, so we just verify a Bearer token is present. We don't
+        pin to a specific token value — that breaks on token refresh (every
+        30 min) and on disconnect/reconnect (new OAuth flow = new token).
         """
-        if not token:
-            return False
-        if not self._token:
-            # First registration — accept and store
-            self._token = token
-            return True
-        return token == self._token
+        return bool(token)
 
     def register(self, data: dict) -> dict:
         """Handle extension registration."""

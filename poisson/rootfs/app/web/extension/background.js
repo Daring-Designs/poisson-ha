@@ -585,6 +585,9 @@
         accessToken: "",
         refreshToken: "",
         tokenExpiry: 0,
+        poissonUrl: "",
+        haUrl: "",
+        lastAuthError: "",
       });
       sendResponse({ ok: true });
       return;
