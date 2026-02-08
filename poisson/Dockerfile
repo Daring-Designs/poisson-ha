@@ -20,7 +20,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-freefont-ttf \
     fonts-noto \
     tor \
-    deb.torproject.org-keyring \
     && apt-get purge -y --auto-remove wget gpg \
     && rm -rf /var/lib/apt/lists/*
 
