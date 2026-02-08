@@ -70,5 +70,6 @@ jobs:
           tags: |
             ${{ env.IMAGE_BASE }}/${{ matrix.arch }}-addon-poisson:${{ steps.version.outputs.version }}
             ${{ env.IMAGE_BASE }}/${{ matrix.arch }}-addon-poisson:latest
+          provenance: false
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
