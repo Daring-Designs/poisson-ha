@@ -24,6 +24,7 @@ options:
   max_bandwidth_mbps: 10
   max_concurrent_sessions: 2
   tor_relay_mode: false
+  match_browser_fingerprint: true
   schedule_mode: "always"
 schema:
   intensity: "list(low|medium|high|paranoid)"
@@ -36,4 +37,5 @@ schema:
   max_bandwidth_mbps: "int(1,100)"
   max_concurrent_sessions: "int(1,5)"
   tor_relay_mode: "bool"
+  match_browser_fingerprint: "bool"
   schedule_mode: "list(always|home_only|away_only|custom)"

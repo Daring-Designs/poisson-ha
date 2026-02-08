@@ -35,6 +35,7 @@ class PersonaRotator:
     def __init__(self, personas_file: Optional[Path] = None):
         self._personas: list[Persona] = []
         self._current: Optional[Persona] = None
+        self._real_persona: Optional[Persona] = None
         path = personas_file or DATA_DIR / "personas.yaml"
         self._load(path)
 
@@ -58,9 +59,22 @@ class PersonaRotator:
             ))
         logger.info("Loaded %d personas", len(self._personas))
 
+    def set_real_persona(self, persona: Persona):
+        """Set the real user's browser persona for fingerprint matching."""
+        self._real_persona = persona
+        logger.info("Captured real browser fingerprint: %s (%dx%d)",
+                     persona.user_agent[:60], persona.viewport_width, persona.viewport_height)
+
     def select(self) -> Persona:
-        """Pick a random persona for a new session."""
-        self._current = random.choice(self._personas)
+        """Pick a persona for a new session.
+
+        When a real persona is set, use it to match the user's fingerprint.
+        Falls back to random selection if no real persona captured yet.
+        """
+        if self._real_persona:
+            self._current = self._real_persona
+        else:
+            self._current = random.choice(self._personas)
         return self._current
 
     @property

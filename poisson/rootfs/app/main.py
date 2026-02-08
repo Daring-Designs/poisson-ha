@@ -60,11 +60,12 @@ async def main():
     if config.get("enable_research_noise", False):
         scheduler.register_engine("research", ResearchEngine(session_manager=session_mgr))
 
-    # API server for Ingress UI
+    # API server for Ingress UI (pass persona rotator for fingerprint matching)
     api = APIServer(
         scheduler=scheduler,
         config=config,
         port=config.get("api_port", 8099),
+        persona_rotator=session_mgr._personas,
     )
 
     # Graceful shutdown

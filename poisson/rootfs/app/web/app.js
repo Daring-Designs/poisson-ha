@@ -142,6 +142,13 @@
     await Promise.all([updateStatus(), updateStats(), updateActivity(), updateEngines()]);
   }
 
+  // Report real viewport dimensions for fingerprint matching
+  fetch("papi/fingerprint", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({width: window.screen.width, height: window.screen.height})
+  }).catch(function () {});
+
   // Initial load + start polling
   poll();
   pollInterval = setInterval(poll, 5000);

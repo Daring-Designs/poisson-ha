@@ -34,6 +34,7 @@ DEFAULTS = {
     "schedule_mode": "always",
     "session_length_mean": 15.0,
     "obsession_probability": 0.05,
+    "match_browser_fingerprint": True,
     "log_level": "INFO",
     "api_port": 8099,
 }
