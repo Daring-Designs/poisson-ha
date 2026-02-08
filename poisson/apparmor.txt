@@ -1,0 +1,65 @@
+#include <tunables/global>
+
+profile poisson flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+
+  # Capabilities
+  capability net_admin,
+  capability net_raw,
+  capability setgid,
+  capability setuid,
+  capability chown,
+  capability fowner,
+  capability dac_override,
+  capability dac_read_search,
+
+  # S6-Overlay
+  /init ix,
+  /bin/** ix,
+  /usr/bin/** ix,
+  /usr/lib/** ix,
+  /run/{s6,s6-rc*,service}/** ixrw,
+  /package/** ix,
+  /command/** ix,
+  /etc/s6/** ixrw,
+  /etc/services.d/** rwix,
+  /etc/cont-init.d/** rwix,
+  /etc/cont-finish.d/** rwix,
+  /var/run/** rw,
+
+  # Bashio
+  /usr/lib/bashio/** ix,
+  /tmp/** rwk,
+
+  # Data
+  /data/** rw,
+
+  # Application
+  /app/** ixr,
+  /usr/local/lib/python*/** ixr,
+  /usr/local/bin/python* ix,
+
+  # Chromium / Playwright
+  /proc/** r,
+  /sys/** r,
+  /dev/** rw,
+  /dev/shm/** rw,
+
+  # Network access (outbound browsing, DNS, Tor)
+  network inet stream,
+  network inet dgram,
+  network inet6 stream,
+  network inet6 dgram,
+  network netlink raw,
+
+  # DNS resolution
+  /etc/resolv.conf r,
+  /etc/hosts r,
+  /etc/nsswitch.conf r,
+
+  # Deny host filesystem writes outside /data
+  deny /home/** w,
+  deny /root/** w,
+  deny /mnt/** w,
+  deny /media/** w,
+}

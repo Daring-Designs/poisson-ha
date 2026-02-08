@@ -1,0 +1,13 @@
+# Changelog
+
+## 0.1.1
+- Remove Tor relay mode (client-only now)
+- Replace daily bandwidth cap with rolling hourly limit (max_bandwidth_mb_per_hour)
+
+## 0.1.0
+- Initial release
+- Poisson process timing engine with Markov chains
+- Search, browse, DNS, Tor client, and research noise engines
+- Headless Chromium via Playwright with persona rotation
+- Home Assistant Ingress UI dashboard
+- HA sensor integration
