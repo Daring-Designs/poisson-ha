@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.3
+- Fix AppArmor profile blocking container startup
+
 ## 0.1.2
 - Add CHANGELOG.md for add-on store display
 - Add AppArmor security profile
