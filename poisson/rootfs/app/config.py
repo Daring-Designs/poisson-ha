@@ -17,8 +17,13 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# HA add-on options file path
-HA_OPTIONS_PATH = Path("/data/options.json")
+# Config file paths — the run script dumps config via the Supervisor API
+# to /tmp/options.json (readable by poisson user). Fall back to the
+# original /data/options.json for environments where it's readable.
+OPTIONS_PATHS = [
+    Path("/tmp/options.json"),
+    Path("/data/options.json"),
+]
 
 DEFAULTS = {
     "intensity": "medium",
@@ -45,10 +50,16 @@ def load_config() -> dict[str, Any]:
     config = dict(DEFAULTS)
 
     # Layer 1: HA add-on options.json
-    if HA_OPTIONS_PATH.exists():
+    ha_loaded = False
+    for opts_path in OPTIONS_PATHS:
+        if not opts_path.exists():
+            continue
         try:
-            with open(HA_OPTIONS_PATH) as f:
+            with open(opts_path) as f:
                 ha_opts = json.load(f)
+            if not isinstance(ha_opts, dict):
+                logger.warning("Ignoring %s: not a JSON object", opts_path)
+                continue
             matched = []
             for key in DEFAULTS:
                 if key in ha_opts:
@@ -56,12 +67,14 @@ def load_config() -> dict[str, Any]:
                     if config[key] != DEFAULTS[key]:
                         matched.append(f"{key}={config[key]}")
             logger.info("Loaded HA options from %s (%d keys, %d non-default: %s)",
-                        HA_OPTIONS_PATH, len(ha_opts), len(matched),
+                        opts_path, len(ha_opts), len(matched),
                         ", ".join(matched) or "none")
+            ha_loaded = True
+            break
         except (json.JSONDecodeError, OSError) as e:
-            logger.warning("Failed to read HA options: %s", e)
-    else:
-        logger.warning("No HA options file at %s — using defaults", HA_OPTIONS_PATH)
+            logger.warning("Failed to read %s: %s", opts_path, e)
+    if not ha_loaded:
+        logger.warning("No readable HA options file found — using defaults")
 
     # Layer 2: Environment variable overrides (POISSON_INTENSITY, etc.)
     for key in DEFAULTS:

@@ -3,5 +3,14 @@
 
 bashio::log.info "Starting Poisson traffic noise generator..."
 
+# /data/options.json is root-owned and not readable by the poisson user.
+# Dump config via the HA Supervisor API to a temp file Python can read.
+if [ -n "${SUPERVISOR_TOKEN:-}" ]; then
+    curl -s -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+        http://supervisor/addons/self/options/config > /tmp/options.json 2>/dev/null \
+        && bashio::log.info "Configuration loaded via Supervisor API" \
+        || bashio::log.warning "Failed to load config from Supervisor API"
+fi
+
 cd /app || exit 1
 exec python3 main.py
