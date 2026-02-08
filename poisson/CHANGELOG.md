@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+- Add CHANGELOG.md for add-on store display
+- Add AppArmor security profile
+
 ## 0.1.1
 - Remove Tor relay mode (client-only now)
 - Replace daily bandwidth cap with rolling hourly limit (max_bandwidth_mb_per_hour)
