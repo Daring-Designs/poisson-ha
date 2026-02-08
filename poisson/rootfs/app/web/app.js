@@ -195,6 +195,33 @@
     });
   }
 
+  // Compute the external-accessible Poisson URL for the extension.
+  // The dashboard loads via HA ingress at a path like:
+  //   /hassio/ingress/<addon_id>/
+  // The actual API proxy is at:
+  //   /api/hassio/ingress/<addon_id>/
+  // The extension needs the full URL so it works from any network.
+  var poissonUrlEl = document.getElementById("ext-poisson-url");
+  var copyUrlBtn = document.getElementById("copy-url-btn");
+  if (poissonUrlEl) {
+    var path = window.location.pathname.replace(/\/$/, "");
+    // Convert frontend path (/hassio/ingress/xxx) to API proxy path (/api/hassio/ingress/xxx)
+    var apiPath = path.startsWith("/hassio/ingress/")
+      ? "/api" + path
+      : path;
+    var poissonUrl = window.location.origin + apiPath;
+    poissonUrlEl.textContent = poissonUrl;
+
+    if (copyUrlBtn) {
+      copyUrlBtn.addEventListener("click", function () {
+        navigator.clipboard.writeText(poissonUrl).then(function () {
+          copyUrlBtn.textContent = "Copied!";
+          setTimeout(function () { copyUrlBtn.textContent = "Copy"; }, 2000);
+        });
+      });
+    }
+  }
+
   // --- Polling loop ---
   async function poll() {
     await Promise.all([updateStatus(), updateStats(), updateActivity(), updateEngines(), updateExtStatus()]);

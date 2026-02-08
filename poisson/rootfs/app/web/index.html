@@ -89,6 +89,23 @@
           using your actual cookies and fingerprint. This makes fake traffic indistinguishable
           from your real browsing.
         </p>
+
+        <div class="how-it-works">
+          <h3>How it works</h3>
+          <p>The add-on and extension are <strong>two independent noise generators</strong>.
+            The add-on runs headless Chromium on your HA server &mdash; generating volume
+            and DNS noise but without your logged-in sessions. The extension runs in your
+            real browser &mdash; periodically opening background tabs to search engines and
+            websites, then closing them after a few seconds. Since these tabs use your real
+            cookies and fingerprint, the noise is indistinguishable from your actual browsing.</p>
+          <p>The extension does <strong>not</strong> read page content, collect passwords, or
+            send cookies anywhere. It just opens and closes tabs. The only data sent to your
+            Poisson server is your browser fingerprint (so headless sessions can match it) and
+            action counts (displayed on this dashboard). Authentication uses HA's standard
+            OAuth2 &mdash; the extension never sees your password.</p>
+        </div>
+
+        <h3>Installation</h3>
         <ol class="setup-steps">
           <li>
             <a id="ext-download-link" href="papi/ext/download" class="ext-download-btn">Download Extension (.zip)</a>
@@ -99,11 +116,18 @@
           <li>Click <strong>Load unpacked</strong> and select the extracted folder</li>
           <li>Click the Poisson fish icon in your browser toolbar</li>
           <li>
-            Enter your Home Assistant URL and a <strong>Long-Lived Access Token</strong>
-            <span class="step-hint">Create a token in HA &rarr; Profile &rarr; Long-Lived Access Tokens</span>
+            Paste your Poisson URL and click <strong>Sign in to Home Assistant</strong>
+            <div class="step-url-box">
+              <label>Your Poisson URL:</label>
+              <code id="ext-poisson-url">--</code>
+              <button id="copy-url-btn" class="copy-btn" title="Copy to clipboard">Copy</button>
+            </div>
           </li>
-          <li>Click <strong>Connect</strong> &mdash; you're done!</li>
+          <li>Log in with your HA credentials &mdash; you're done!</li>
         </ol>
+        <p class="modal-source">
+          <a href="https://github.com/Daring-Designs/poisson/tree/main/poisson/rootfs/app/web/extension" target="_blank" rel="noopener">Review the extension source code on GitHub</a>
+        </p>
       </div>
     </div>
   </div>

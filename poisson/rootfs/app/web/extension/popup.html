@@ -13,17 +13,12 @@
     <p class="subtitle">Connect to your Home Assistant add-on</p>
 
     <div class="form-group">
-      <label for="server-url">Home Assistant URL</label>
-      <input type="url" id="server-url" placeholder="https://your-ha.example.com">
+      <label for="server-url">Poisson URL</label>
+      <input type="url" id="server-url" placeholder="https://your-ha.example.com/api/hassio/ingress/...">
+      <span class="hint">Copy from the Poisson dashboard &rarr; Setup Guide</span>
     </div>
 
-    <div class="form-group">
-      <label for="token">Long-Lived Access Token</label>
-      <input type="password" id="token" placeholder="Paste your HA token here">
-      <span class="hint">Create one in HA &rarr; Profile &rarr; Long-Lived Access Tokens</span>
-    </div>
-
-    <button id="connect-btn" class="btn btn-primary">Connect</button>
+    <button id="connect-btn" class="btn btn-primary">Sign in to Home Assistant</button>
     <div id="connect-error" class="error hidden"></div>
   </div>
 

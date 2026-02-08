@@ -423,6 +423,95 @@ main {
 
 .ext-download-btn:hover { opacity: 0.85; }
 
+.step-url-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  flex-wrap: wrap;
+}
+
+.step-url-box label {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.step-url-box code {
+  flex: 1;
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: none;
+  padding: 0;
+  word-break: break-all;
+  min-width: 0;
+}
+
+.copy-btn {
+  padding: 4px 10px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: none;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.copy-btn:hover { opacity: 0.85; }
+
+.how-it-works {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+
+.how-it-works h3,
+.modal-body > h3 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.how-it-works p {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.how-it-works p:last-child { margin-bottom: 0; }
+
+.modal-source {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.modal-source a {
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.modal-source a:hover { color: var(--accent); }
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--surface); }
