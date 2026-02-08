@@ -82,24 +82,6 @@
     statAds.textContent = stats.ads || 0;
   }
 
-  // -------------------------------------------------------------------
-  // URL helpers — extract HA base URL from the full Poisson ingress URL.
-  //
-  // Poisson URL: https://home.example.com/api/hassio/ingress/abc123
-  // HA base URL: https://home.example.com
-  //
-  // The OAuth endpoints are at the HA base URL (/auth/authorize, /auth/token).
-  // API calls go to the full Poisson ingress URL.
-  // -------------------------------------------------------------------
-  function extractHaUrl(poissonUrl) {
-    try {
-      var url = new URL(poissonUrl);
-      return url.origin; // e.g., "https://home.example.com"
-    } catch (e) {
-      return "";
-    }
-  }
-
   // Ensure the Poisson URL uses the API ingress path, not the frontend path.
   // Frontend: /hassio/ingress/xxx  →  API: /api/hassio/ingress/xxx
   function normalizePoissonUrl(input) {
@@ -117,90 +99,11 @@
   }
 
   // -------------------------------------------------------------------
-  // OAuth2 flow — uses HA's standard authorization code flow.
-  //
-  // 1. Open HA's /auth/authorize in a popup window
-  // 2. User logs in with their HA credentials (we never see the password)
-  // 3. HA redirects back with an authorization code
-  // 4. We exchange the code for access + refresh tokens
-  // 5. Tokens are stored locally and used for API calls
-  //
-  // client_id = chrome extension redirect URL (no client secret needed)
+  // On popup open: check if already configured.
+  // This is the primary view-switching logic — after OAuth completes in
+  // the background service worker, the user reopens the popup and this
+  // check sees hasAuth: true, switching to the status view.
   // -------------------------------------------------------------------
-  function startOAuthFlow(poissonUrl, cb) {
-    var haUrl = extractHaUrl(poissonUrl);
-    if (!haUrl) {
-      cb(new Error("Invalid URL"));
-      return;
-    }
-
-    var clientId = chrome.identity.getRedirectURL();
-    var redirectUri = chrome.identity.getRedirectURL();
-    var state = Math.random().toString(36).substring(2); // CSRF protection
-
-    var authUrl = haUrl + "/auth/authorize"
-      + "?client_id=" + encodeURIComponent(clientId)
-      + "&redirect_uri=" + encodeURIComponent(redirectUri)
-      + "&state=" + encodeURIComponent(state)
-      + "&response_type=code";
-
-    // Open HA's login page in a popup window
-    chrome.identity.launchWebAuthFlow({
-      url: authUrl,
-      interactive: true,
-    }, function (responseUrl) {
-      if (chrome.runtime.lastError) {
-        cb(new Error(chrome.runtime.lastError.message));
-        return;
-      }
-      if (!responseUrl) {
-        cb(new Error("No response from HA"));
-        return;
-      }
-
-      // Extract the authorization code from the redirect URL
-      var params = new URL(responseUrl).searchParams;
-      var code = params.get("code");
-      var returnedState = params.get("state");
-
-      if (returnedState !== state) {
-        cb(new Error("State mismatch — possible CSRF attack"));
-        return;
-      }
-      if (!code) {
-        cb(new Error("No authorization code received"));
-        return;
-      }
-
-      // Exchange the code for access + refresh tokens
-      var tokenBody = "grant_type=authorization_code"
-        + "&code=" + encodeURIComponent(code)
-        + "&client_id=" + encodeURIComponent(clientId);
-
-      fetch(haUrl + "/auth/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: tokenBody,
-      })
-        .then(function (res) {
-          if (!res.ok) throw new Error("Token exchange failed: HTTP " + res.status);
-          return res.json();
-        })
-        .then(function (data) {
-          // HA returns: { access_token, token_type, refresh_token, expires_in, ha_auth_provider }
-          cb(null, {
-            accessToken: data.access_token,
-            refreshToken: data.refresh_token,
-            tokenExpiry: Date.now() + (data.expires_in * 1000) - 60000, // 1 min buffer
-          });
-        })
-        .catch(function (err) {
-          cb(err);
-        });
-    });
-  }
-
-  // --- On popup open: check if already configured ---
   chrome.runtime.sendMessage({ type: "get-status" }, function (status) {
     if (chrome.runtime.lastError || !status) {
       showSetup();
@@ -211,10 +114,23 @@
       updateStatusUI(status);
     } else {
       showSetup();
+      // Show any error from a previous auth attempt
+      if (status.lastAuthError) {
+        connectError.textContent = status.lastAuthError;
+        connectError.classList.remove("hidden");
+      }
     }
   });
 
-  // --- Connect button: launch OAuth flow ---
+  // -------------------------------------------------------------------
+  // Connect button — sends the OAuth request to the background service
+  // worker (background.js), which handles the ENTIRE flow. This is
+  // necessary because Chrome closes the popup when the auth window
+  // opens (focus shifts). The service worker persists through the flow.
+  //
+  // After the user completes login and reopens the popup, the
+  // get-status check above will see hasAuth: true and show status.
+  // -------------------------------------------------------------------
   connectBtn.addEventListener("click", function () {
     var poissonUrl = serverUrlInput.value.trim();
     connectError.classList.add("hidden");
@@ -230,42 +146,33 @@
       poissonUrl = "https://" + poissonUrl;
     }
     poissonUrl = normalizePoissonUrl(poissonUrl);
-    var haUrl = extractHaUrl(poissonUrl);
 
     connectBtn.textContent = "Signing in...";
     connectBtn.disabled = true;
 
-    // Launch HA OAuth login flow
-    startOAuthFlow(poissonUrl, function (err, tokens) {
+    // Tell the background service worker to start the OAuth flow.
+    // The popup will likely close when the auth window opens — that's fine.
+    // The background worker handles everything, and when the user
+    // reopens the popup, get-status will show the connected state.
+    chrome.runtime.sendMessage({
+      type: "start-oauth",
+      poissonUrl: poissonUrl,
+    }, function (response) {
+      // This callback only fires if the popup is still open (unlikely)
       connectBtn.textContent = "Sign in to Home Assistant";
       connectBtn.disabled = false;
 
-      if (err) {
-        connectError.textContent = err.message || "Sign-in failed";
+      if (chrome.runtime.lastError) return; // Popup was closed — expected
+      if (!response || !response.ok) {
+        connectError.textContent = (response && response.error) || "Sign-in failed. Try again.";
         connectError.classList.remove("hidden");
         return;
       }
 
-      // Send tokens to background.js to store and start noise
-      chrome.runtime.sendMessage({
-        type: "oauth-connect",
-        poissonUrl: poissonUrl,
-        haUrl: haUrl,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        tokenExpiry: tokens.tokenExpiry,
-      }, function (response) {
-        if (chrome.runtime.lastError || !response || !response.ok) {
-          connectError.textContent = "Failed to initialize. Try again.";
-          connectError.classList.remove("hidden");
-          return;
-        }
-
-        // Switch to status view
-        showStatus();
-        chrome.runtime.sendMessage({ type: "get-status" }, function (status) {
-          if (status) updateStatusUI(status);
-        });
+      // If popup survived (rare), switch to status view
+      showStatus();
+      chrome.runtime.sendMessage({ type: "get-status" }, function (status) {
+        if (status) updateStatusUI(status);
       });
     });
   });

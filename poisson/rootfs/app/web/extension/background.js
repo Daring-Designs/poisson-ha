@@ -240,6 +240,112 @@
   }
 
   // -------------------------------------------------------------------
+  // URL helpers — extract HA base URL from the full Poisson ingress URL.
+  // Duplicated here from popup.js because the background service worker
+  // needs them for the OAuth flow (popup may close during auth).
+  // -------------------------------------------------------------------
+  function extractHaUrl(poissonUrl) {
+    try {
+      return new URL(poissonUrl).origin;
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function normalizePoissonUrl(input) {
+    try {
+      var url = new URL(input);
+      var path = url.pathname.replace(/\/$/, "");
+      if (path.match(/^\/hassio\/ingress\//) && !path.startsWith("/api/")) {
+        url.pathname = "/api" + path;
+      }
+      return url.origin + url.pathname.replace(/\/$/, "");
+    } catch (e) {
+      return input;
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // OAuth2 flow — runs entirely in the background service worker so it
+  // survives the popup closing (which happens when the auth window opens).
+  //
+  // 1. Open HA's /auth/authorize via chrome.identity.launchWebAuthFlow
+  // 2. User logs in with their HA credentials (we never see the password)
+  // 3. HA redirects back with an authorization code
+  // 4. We exchange the code for access + refresh tokens
+  // 5. Tokens are stored and noise generation starts
+  // -------------------------------------------------------------------
+  function startOAuthFlow(poissonUrl, cb) {
+    var haUrl = extractHaUrl(poissonUrl);
+    if (!haUrl) {
+      cb(new Error("Invalid URL"));
+      return;
+    }
+
+    var clientId = chrome.identity.getRedirectURL();
+    var redirectUri = chrome.identity.getRedirectURL();
+    var state = Math.random().toString(36).substring(2);
+
+    var authUrl = haUrl + "/auth/authorize"
+      + "?client_id=" + encodeURIComponent(clientId)
+      + "&redirect_uri=" + encodeURIComponent(redirectUri)
+      + "&state=" + encodeURIComponent(state)
+      + "&response_type=code";
+
+    chrome.identity.launchWebAuthFlow({
+      url: authUrl,
+      interactive: true,
+    }, function (responseUrl) {
+      if (chrome.runtime.lastError) {
+        cb(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      if (!responseUrl) {
+        cb(new Error("No response from HA"));
+        return;
+      }
+
+      var params = new URL(responseUrl).searchParams;
+      var code = params.get("code");
+      var returnedState = params.get("state");
+
+      if (returnedState !== state) {
+        cb(new Error("State mismatch"));
+        return;
+      }
+      if (!code) {
+        cb(new Error("No authorization code received"));
+        return;
+      }
+
+      var tokenBody = "grant_type=authorization_code"
+        + "&code=" + encodeURIComponent(code)
+        + "&client_id=" + encodeURIComponent(clientId);
+
+      fetch(haUrl + "/auth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: tokenBody,
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error("Token exchange failed: HTTP " + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          cb(null, {
+            haUrl: haUrl,
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token,
+            tokenExpiry: Date.now() + (data.expires_in * 1000) - 60000,
+          });
+        })
+        .catch(function (err) {
+          cb(err);
+        });
+    });
+  }
+
+  // -------------------------------------------------------------------
   // Registration — called after successful OAuth login.
   // Sends your browser fingerprint to YOUR server so headless noise
   // sessions can mimic your real browser's characteristics.
@@ -415,23 +521,44 @@
     }
 
     // -------------------------------------------------------------------
-    // OAuth connect — popup completed the OAuth flow and has tokens.
-    // Store them and start noise generation.
+    // Start OAuth — popup triggers this, then the ENTIRE OAuth flow runs
+    // here in the background service worker. This is critical because the
+    // popup closes when the auth window opens (Chrome dismisses popups
+    // when focus shifts). The service worker persists through the flow.
+    //
+    // When the user reopens the popup, get-status will see hasAuth: true
+    // and show the connected status view.
     // -------------------------------------------------------------------
-    if (msg.type === "oauth-connect") {
-      chrome.storage.local.set({
-        poissonUrl: msg.poissonUrl,
-        haUrl: msg.haUrl,
-        accessToken: msg.accessToken,
-        refreshToken: msg.refreshToken,
-        tokenExpiry: msg.tokenExpiry,
-        enabled: true,
-      }, function () {
-        getConfig(function (config) {
-          register(config);
-          chrome.alarms.create(HEARTBEAT_ALARM, { periodInMinutes: HEARTBEAT_INTERVAL_MIN });
-          scheduleNextNoise(config.intensity);
-          sendResponse({ ok: true });
+    if (msg.type === "start-oauth") {
+      var poissonUrl = normalizePoissonUrl(msg.poissonUrl);
+
+      startOAuthFlow(poissonUrl, function (err, tokens) {
+        if (err) {
+          console.error("[Poisson] OAuth failed:", err);
+          // Store the error so popup can show it when reopened
+          chrome.storage.local.set({ lastAuthError: err.message || "Sign-in failed" });
+          // Try to respond (popup may be gone — that's OK)
+          try { sendResponse({ ok: false, error: err.message }); } catch (e) {}
+          return;
+        }
+
+        // Store tokens and start noise generation
+        chrome.storage.local.set({
+          poissonUrl: poissonUrl,
+          haUrl: tokens.haUrl,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          tokenExpiry: tokens.tokenExpiry,
+          enabled: true,
+          lastAuthError: "",
+        }, function () {
+          getConfig(function (config) {
+            register(config);
+            chrome.alarms.create(HEARTBEAT_ALARM, { periodInMinutes: HEARTBEAT_INTERVAL_MIN });
+            scheduleNextNoise(config.intensity);
+            // Try to respond (popup may be gone — that's OK)
+            try { sendResponse({ ok: true }); } catch (e) {}
+          });
         });
       });
       return true; // keep message channel open for async sendResponse
@@ -489,7 +616,7 @@
     // Popup requesting current status for display
     if (msg.type === "get-status") {
       getConfig(function (config) {
-        chrome.storage.local.get(["connected"], function (data) {
+        chrome.storage.local.get(["connected", "lastAuthError"], function (data) {
           sendResponse({
             connected: !!data.connected,
             enabled: config.enabled,
@@ -497,6 +624,7 @@
             stats: config.stats,
             poissonUrl: config.poissonUrl,
             hasAuth: !!(config.accessToken && config.refreshToken),
+            lastAuthError: data.lastAuthError || "",
           });
         });
       });
