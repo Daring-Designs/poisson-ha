@@ -11,6 +11,8 @@
   --yellow: #f0c040;
   --red: #e34040;
   --orange: #e08030;
+  --purple: #c084fc;
+  --teal: #2dd4bf;
   --radius: 8px;
   --mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
 }
@@ -169,9 +171,9 @@ main {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .stat-card {
@@ -519,6 +521,83 @@ main {
 }
 
 .modal-source a:hover { color: var(--accent); }
+
+/* Tor badge */
+.badge-tor-on { background: rgba(52, 208, 88, 0.15); color: var(--green); }
+.badge-tor-off { background: rgba(227, 64, 64, 0.15); color: var(--red); }
+.badge-tor-disabled { background: rgba(139, 143, 163, 0.1); color: var(--text-dim); }
+
+/* Next session countdown */
+.next-session {
+  font-size: 0.75rem;
+  font-family: var(--mono);
+  color: var(--text-dim);
+  margin-bottom: 20px;
+  min-height: 1.2em;
+}
+
+/* Per-engine stats */
+.engine-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.engine-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+.engine-stat-pill .pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.engine-stat-pill .pill-name { font-weight: 600; }
+.engine-stat-pill .pill-errors { color: var(--red); margin-left: 2px; }
+
+.engine-stat-pill[data-engine="search"] .pill-dot { background: var(--accent); }
+.engine-stat-pill[data-engine="browse"] .pill-dot { background: var(--green); }
+.engine-stat-pill[data-engine="dns"] .pill-dot { background: var(--orange); }
+.engine-stat-pill[data-engine="tor"] .pill-dot { background: var(--purple); }
+.engine-stat-pill[data-engine="research"] .pill-dot { background: var(--teal); }
+.engine-stat-pill[data-engine="ad_clicks"] .pill-dot { background: var(--yellow); }
+
+/* Activity chart */
+.chart-section {
+  margin-bottom: 24px;
+}
+
+.chart-section h2 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.chart-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  height: 192px;
+}
+
+.chart-container svg {
+  display: block;
+}
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }

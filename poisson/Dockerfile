@@ -1,7 +1,7 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-# Install system dependencies (excluding tor — added from official repo below)
+# Install system dependencies (excluding tor — installed from official repo below)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
@@ -14,11 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-freefont-ttf \
     fonts-noto \
     gpg \
-    gpg-agent \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Tor from the official Tor Project repo (Debian Bookworm packages are outdated)
+# Install Tor from official Tor Project repo (Debian Bookworm ships outdated 0.4.7.x)
 RUN wget -qO- https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc \
     | gpg --dearmor -o /usr/share/keyrings/torproject-archive-keyring.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/torproject-archive-keyring.gpg] https://deb.torproject.org/torproject.org bookworm main" \

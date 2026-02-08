@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Poisson — Traffic Noise Generator</title>
-  <link rel="stylesheet" href="style.css?v=0.2.0">
+  <link rel="stylesheet" href="style.css?v=0.3.0">
 </head>
 <body>
   <header>
@@ -12,6 +12,7 @@
       <h1><img src="poisson-logo.svg" alt="" class="header-logo">Poisson</h1>
       <span id="status-badge" class="badge badge-running">Running</span>
       <span id="fingerprint-status" class="badge badge-fingerprint">Fingerprint --</span>
+      <span id="tor-badge" class="badge badge-tor-disabled">Tor --</span>
     </div>
     <div class="header-right">
       <span id="uptime" class="meta">Uptime: --</span>
@@ -52,6 +53,21 @@
       <div class="stat-card">
         <div class="stat-value" id="stat-active">0</div>
         <div class="stat-label">Active Sessions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-errors">0</div>
+        <div class="stat-label">Errors Today</div>
+      </div>
+    </section>
+
+    <div id="next-session" class="next-session"></div>
+
+    <section id="engine-stats-section" class="engine-stats"></section>
+
+    <section class="chart-section">
+      <h2>Activity — Last 24 Hours</h2>
+      <div class="chart-container">
+        <svg id="activity-chart" width="100%" height="160"></svg>
       </div>
     </section>
 
@@ -127,6 +143,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=0.2.0"></script>
+  <script src="app.js?v=0.3.0"></script>
 </body>
 </html>

@@ -58,6 +58,7 @@ class Scheduler:
         self._engines = {}
         self._running = False
         self._task: Optional[asyncio.Task] = None
+        self._next_session_time: Optional[float] = None
         self._max_bytes_per_day = config.get("max_bandwidth_mbps", 10) * 1024 * 1024
 
     def register_engine(self, name: str, engine):
@@ -88,8 +89,10 @@ class Scheduler:
             try:
                 # Inter-session gap
                 gap = self.timer.next_inter_session_gap()
+                self._next_session_time = time.time() + gap
                 logger.info("Next session in %.1f seconds", gap)
                 await asyncio.sleep(gap)
+                self._next_session_time = None
 
                 if not self._running:
                     break
@@ -225,4 +228,5 @@ class Scheduler:
             "uptime_seconds": int(time.time() - self.stats.start_time),
             "active_sessions": self.stats.active_sessions,
             "last_event_time": self.stats.last_event_time,
+            "next_session_at": self._next_session_time,
         }

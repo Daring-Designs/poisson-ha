@@ -33,9 +33,12 @@ Extension endpoints (require API key, except register):
 - GET /papi/ext/status — extension connection status for dashboard
 """
 
+import asyncio
 import json
 import logging
 import pathlib
+import time
+from collections import defaultdict
 from typing import Optional
 
 from aiohttp import web
@@ -94,6 +97,7 @@ class APIServer:
         self._app.router.add_get("/papi/stats", self._handle_stats)
         self._app.router.add_get("/papi/activity", self._handle_activity)
         self._app.router.add_get("/papi/engines", self._handle_engines)
+        self._app.router.add_get("/papi/activity/chart", self._handle_activity_chart)
         self._app.router.add_post("/papi/engines/{name}/toggle", self._handle_engine_toggle)
         self._app.router.add_post("/papi/intensity", self._handle_intensity)
         self._app.router.add_get("/papi/config", self._handle_config)
@@ -248,6 +252,20 @@ class APIServer:
 
     # --- Dashboard read endpoints ---
 
+    async def _check_tor_status(self) -> str:
+        """Check Tor SOCKS proxy availability."""
+        if not self._config.get("enable_tor", False):
+            return "disabled"
+        try:
+            _, writer = await asyncio.wait_for(
+                asyncio.open_connection("127.0.0.1", 9050), timeout=2.0
+            )
+            writer.close()
+            await writer.wait_closed()
+            return "connected"
+        except (OSError, asyncio.TimeoutError):
+            return "offline"
+
     async def _handle_status(self, request: web.Request) -> web.Response:
         stats = self._scheduler.get_stats()
         running = self._scheduler._running
@@ -261,6 +279,7 @@ class APIServer:
             if self._persona_rotator.current:
                 persona_name = self._persona_rotator.current.name
             fingerprint_matched = self._fingerprint_captured
+        tor_status = await self._check_tor_status()
         return web.json_response({
             "status": "running" if running else "paused",
             "uptime_seconds": stats["uptime_seconds"],
@@ -268,6 +287,7 @@ class APIServer:
             "active_engines": engines_active,
             "current_persona": persona_name,
             "fingerprint_matched": fingerprint_matched,
+            "tor_status": tor_status,
         })
 
     async def _handle_stats(self, request: web.Request) -> web.Response:
@@ -276,9 +296,18 @@ class APIServer:
             name: eng.get_stats()
             for name, eng in self._scheduler._engines.items()
         }
+        errors_today = sum(
+            eng._error_count for eng in self._scheduler._engines.values()
+        )
+        next_session_in = None
+        if stats.get("next_session_at"):
+            remaining = stats["next_session_at"] - time.time()
+            next_session_in = max(0, int(remaining))
         return web.json_response({
             **stats,
             "engines": engine_stats,
+            "errors_today": errors_today,
+            "next_session_in": next_session_in,
         })
 
     async def _handle_activity(self, request: web.Request) -> web.Response:
@@ -291,6 +320,31 @@ class APIServer:
             activity.extend(engine.get_recent_activity(count))
         activity.sort(key=lambda a: a["timestamp"], reverse=True)
         return web.json_response({"activity": activity[:count]})
+
+    async def _handle_activity_chart(self, request: web.Request) -> web.Response:
+        """Return hourly event counts for last 24h, broken down by engine."""
+        now = time.time()
+        cutoff = now - 24 * 3600
+        # Initialize 24 hourly buckets per engine
+        buckets = defaultdict(lambda: [0] * 24)
+        for name, engine in self._scheduler._engines.items():
+            for entry in engine.get_recent_activity(200):
+                ts = entry["timestamp"]
+                if ts < cutoff:
+                    continue
+                hours_ago = int((now - ts) / 3600)
+                if 0 <= hours_ago < 24:
+                    buckets[name][23 - hours_ago] += 1
+        # Build hour labels (oldest first)
+        from datetime import datetime
+        labels = []
+        for i in range(24):
+            h = datetime.fromtimestamp(now - (23 - i) * 3600).strftime("%H:00")
+            labels.append(h)
+        return web.json_response({
+            "labels": labels,
+            "engines": dict(buckets),
+        })
 
     async def _handle_engines(self, request: web.Request) -> web.Response:
         engines = {
