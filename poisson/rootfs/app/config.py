@@ -60,6 +60,9 @@ def load_config() -> dict[str, Any]:
             if not isinstance(ha_opts, dict):
                 logger.warning("Ignoring %s: not a JSON object", opts_path)
                 continue
+            # The Supervisor API wraps config in {"result":"ok","data":{...}}
+            if "data" in ha_opts and isinstance(ha_opts["data"], dict):
+                ha_opts = ha_opts["data"]
             matched = []
             for key in DEFAULTS:
                 if key in ha_opts:

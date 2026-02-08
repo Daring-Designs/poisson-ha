@@ -32,8 +32,12 @@ def setup_logging(level: str = "INFO"):
 
 
 async def main():
+    # Set up logging first so config loader messages are visible
+    setup_logging("INFO")
     config = load_config()
-    setup_logging(config.get("log_level", "INFO"))
+    # Re-configure if user set a different log level
+    if config.get("log_level", "INFO").upper() != "INFO":
+        setup_logging(config["log_level"])
     logger = logging.getLogger("poisson")
 
     logger.info("=" * 60)
