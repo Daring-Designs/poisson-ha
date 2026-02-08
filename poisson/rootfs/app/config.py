@@ -49,12 +49,19 @@ def load_config() -> dict[str, Any]:
         try:
             with open(HA_OPTIONS_PATH) as f:
                 ha_opts = json.load(f)
+            matched = []
             for key in DEFAULTS:
                 if key in ha_opts:
                     config[key] = ha_opts[key]
-            logger.info("Loaded HA add-on options from %s", HA_OPTIONS_PATH)
+                    if config[key] != DEFAULTS[key]:
+                        matched.append(f"{key}={config[key]}")
+            logger.info("Loaded HA options from %s (%d keys, %d non-default: %s)",
+                        HA_OPTIONS_PATH, len(ha_opts), len(matched),
+                        ", ".join(matched) or "none")
         except (json.JSONDecodeError, OSError) as e:
             logger.warning("Failed to read HA options: %s", e)
+    else:
+        logger.warning("No HA options file at %s — using defaults", HA_OPTIONS_PATH)
 
     # Layer 2: Environment variable overrides (POISSON_INTENSITY, etc.)
     for key in DEFAULTS:

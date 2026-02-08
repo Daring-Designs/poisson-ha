@@ -28,8 +28,8 @@ ENV CHROMIUM_PATH=/usr/bin/chromium
 
 # Create non-root user (limits blast radius of --no-sandbox Chromium exploits)
 RUN useradd -r -m -s /usr/sbin/nologin poisson \
-    && mkdir -p /data /usr/lib/playwright \
-    && chown -R poisson:poisson /data /usr/lib/playwright
+    && mkdir -p /data /usr/lib/playwright /var/lib/tor \
+    && chown -R poisson:poisson /data /usr/lib/playwright /var/lib/tor
 
 # Copy application
 COPY rootfs /

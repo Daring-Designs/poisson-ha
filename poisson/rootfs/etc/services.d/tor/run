@@ -3,6 +3,10 @@
 
 # Only start Tor if enabled in config
 if bashio::config.true "enable_tor"; then
+    # Ensure Tor data directory exists and is writable
+    mkdir -p /var/lib/tor
+    chmod 700 /var/lib/tor
+
     # Start with base SOCKS-only config
     cp /etc/torrc /tmp/torrc
 
