@@ -60,6 +60,18 @@
     uptimeEl.textContent = "Uptime: " + formatUptime(status.uptime_seconds);
     personaEl.textContent = "Persona: " + status.current_persona;
 
+    // Show fingerprint matching status
+    var fpEl = document.getElementById("fingerprint-status");
+    if (fpEl) {
+      if (status.fingerprint_matched) {
+        fpEl.textContent = "Fingerprint Matched";
+        fpEl.className = "badge badge-fingerprint active";
+      } else {
+        fpEl.textContent = "Fingerprint Unmatched";
+        fpEl.className = "badge badge-fingerprint";
+      }
+    }
+
     // Update intensity buttons
     intensitySelector.querySelectorAll(".intensity-btn").forEach(function (btn) {
       btn.classList.toggle("active", btn.dataset.level === status.intensity);

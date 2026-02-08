@@ -138,26 +138,19 @@ class APIServer:
             name for name, eng in self._scheduler._engines.items()
             if eng.enabled
         ]
+        persona_name = "unknown"
+        fingerprint_matched = False
+        if self._persona_rotator:
+            if self._persona_rotator.current:
+                persona_name = self._persona_rotator.current.name
+            fingerprint_matched = self._fingerprint_captured
         return web.json_response({
             "status": "running" if running else "paused",
             "uptime_seconds": stats["uptime_seconds"],
             "intensity": self._config.get("intensity", "medium"),
             "active_engines": engines_active,
-            "current_persona": (
-                self._scheduler._engines.get("browse", None)
-                and getattr(
-                    getattr(self._scheduler._engines.get("browse"), "session_manager", None),
-                    "_personas", None
-                )
-                and getattr(
-                    getattr(self._scheduler._engines.get("browse"), "session_manager", None)._personas,
-                    "current", None
-                )
-                and getattr(
-                    getattr(self._scheduler._engines.get("browse"), "session_manager", None)._personas.current,
-                    "name", "unknown"
-                )
-            ) or "unknown",
+            "current_persona": persona_name,
+            "fingerprint_matched": fingerprint_matched,
         })
 
     async def _handle_stats(self, request: web.Request) -> web.Response:

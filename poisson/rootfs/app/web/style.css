@@ -68,6 +68,8 @@ header {
 .badge-running { background: rgba(52, 208, 88, 0.15); color: var(--green); }
 .badge-paused { background: rgba(240, 192, 64, 0.15); color: var(--yellow); }
 .badge-error { background: rgba(227, 64, 64, 0.15); color: var(--red); }
+.badge-fingerprint { background: rgba(240, 192, 64, 0.15); color: var(--yellow); }
+.badge-fingerprint.active { background: rgba(79, 140, 255, 0.15); color: var(--accent); }
 
 main {
   max-width: 960px;

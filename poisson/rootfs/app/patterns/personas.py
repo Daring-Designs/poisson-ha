@@ -62,6 +62,7 @@ class PersonaRotator:
     def set_real_persona(self, persona: Persona):
         """Set the real user's browser persona for fingerprint matching."""
         self._real_persona = persona
+        self._current = persona
         logger.info("Captured real browser fingerprint: %s (%dx%d)",
                      persona.user_agent[:60], persona.viewport_width, persona.viewport_height)
 
