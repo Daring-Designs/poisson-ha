@@ -43,7 +43,7 @@
   async function fetchJSON(path, opts) {
     try {
       opts = opts || {};
-      opts.headers = Object.assign({"X-Api-Key": API_KEY, "X-Requested-With": "XMLHttpRequest"}, opts.headers || {});
+      opts.headers = Object.assign({"X-Api-Key": API_KEY}, opts.headers || {});
       const res = await fetch(path, opts);
       if (!res.ok) return null;
       return await res.json();

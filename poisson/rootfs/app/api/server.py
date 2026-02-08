@@ -75,13 +75,7 @@ class APIServer:
 
     @web.middleware
     async def _security_headers_middleware(self, request, handler):
-        """Add security headers and CSRF protection to all responses."""
-        # CSRF: reject state-changing requests without X-Requested-With header
-        # (browsers won't send custom headers cross-origin without CORS preflight)
-        if request.method == "POST":
-            if not request.headers.get("X-Requested-With") and not request.headers.get("X-Api-Key"):
-                return web.json_response({"error": "Missing CSRF header"}, status=403)
-
+        """Add security headers to all responses."""
         resp = await handler(request)
         resp.headers["X-Content-Type-Options"] = "nosniff"
         resp.headers["X-Frame-Options"] = "SAMEORIGIN"
