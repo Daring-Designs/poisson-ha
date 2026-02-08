@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5
+- Move browser extension to standalone repo (poisson-extension)
+- Remove extension source files and server-side extension APIs
+- Dashboard extension card now links to the new repo
+
 ## 0.1.4
 - Expanded README with full add-on details and browser extension documentation
 - Fix stale bandwidth references in DOCS.md
