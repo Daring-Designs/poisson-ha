@@ -56,50 +56,11 @@
     }
   }
 
-  // --- Status polling ---
+  // updateStatus is now handled by poll() -> updateStatusFromData()
+  // Kept as a standalone for use by setIntensity()
   async function updateStatus() {
-    const status = await fetchJSON("papi/status");
-    if (!status) {
-      statusBadge.textContent = "Error";
-      statusBadge.className = "badge badge-error";
-      return;
-    }
-
-    statusBadge.textContent = status.status;
-    statusBadge.className = "badge badge-" + status.status;
-    uptimeEl.textContent = "Uptime: " + formatUptime(status.uptime_seconds);
-    personaEl.textContent = "Persona: " + status.current_persona;
-
-    // Show fingerprint matching status
-    var fpEl = document.getElementById("fingerprint-status");
-    if (fpEl) {
-      if (status.fingerprint_matched) {
-        fpEl.textContent = "Fingerprint Matched";
-        fpEl.className = "badge badge-fingerprint active";
-      } else {
-        fpEl.textContent = "Fingerprint Unmatched";
-        fpEl.className = "badge badge-fingerprint";
-      }
-    }
-
-    // Update Tor badge
-    if (torBadge) {
-      if (status.tor_status === "connected") {
-        torBadge.textContent = "Tor Connected";
-        torBadge.className = "badge badge-tor-on";
-      } else if (status.tor_status === "offline") {
-        torBadge.textContent = "Tor Offline";
-        torBadge.className = "badge badge-tor-off";
-      } else {
-        torBadge.textContent = "Tor Disabled";
-        torBadge.className = "badge badge-tor-disabled";
-      }
-    }
-
-    // Update intensity buttons
-    intensitySelector.querySelectorAll(".intensity-btn").forEach(function (btn) {
-      btn.classList.toggle("active", btn.dataset.level === status.intensity);
-    });
+    var status = await fetchJSON("papi/status");
+    if (status) updateStatusFromData(status);
   }
 
   async function updateStats() {
@@ -363,9 +324,76 @@
     }
   }
 
-  // --- Polling loop ---
+  // --- Polling loop with backoff ---
+  var POLL_NORMAL = 5000;
+  var POLL_BACKOFF = 30000;
+  var pollDelay = POLL_NORMAL;
+  var consecutiveFailures = 0;
+
   async function poll() {
-    await Promise.all([updateStatus(), updateStats(), updateActivity(), updateEngines(), updateExtStatus(), updateEngineStats(), updateChart()]);
+    // Use a single status check as connectivity probe
+    var status = await fetchJSON("papi/status");
+    if (!status) {
+      consecutiveFailures++;
+      if (consecutiveFailures >= 2) {
+        // Addon is down — back off and show offline state
+        pollDelay = POLL_BACKOFF;
+        statusBadge.textContent = "Offline";
+        statusBadge.className = "badge badge-error";
+      }
+      schedulePoll();
+      return;
+    }
+    // Addon is up — reset backoff and fetch everything
+    if (consecutiveFailures > 0) {
+      consecutiveFailures = 0;
+      pollDelay = POLL_NORMAL;
+    }
+    // Process the status response we already have
+    updateStatusFromData(status);
+    await Promise.all([updateStats(), updateActivity(), updateEngines(), updateExtStatus(), updateEngineStats(), updateChart()]);
+    schedulePoll();
+  }
+
+  function schedulePoll() {
+    clearTimeout(pollInterval);
+    pollInterval = setTimeout(poll, pollDelay);
+  }
+
+  // Extract status processing so we can reuse the already-fetched data
+  function updateStatusFromData(status) {
+    statusBadge.textContent = status.status;
+    statusBadge.className = "badge badge-" + status.status;
+    uptimeEl.textContent = "Uptime: " + formatUptime(status.uptime_seconds);
+    personaEl.textContent = "Persona: " + status.current_persona;
+
+    var fpEl = document.getElementById("fingerprint-status");
+    if (fpEl) {
+      if (status.fingerprint_matched) {
+        fpEl.textContent = "Fingerprint Matched";
+        fpEl.className = "badge badge-fingerprint active";
+      } else {
+        fpEl.textContent = "Fingerprint Unmatched";
+        fpEl.className = "badge badge-fingerprint";
+      }
+    }
+
+    if (torBadge) {
+      if (status.tor_status === "connected") {
+        torBadge.textContent = "Tor Connected";
+        torBadge.className = "badge badge-tor-on";
+      } else if (status.tor_status === "offline") {
+        torBadge.textContent = "Tor Offline";
+        torBadge.className = "badge badge-tor-off";
+      } else {
+        torBadge.textContent = "Tor Disabled";
+        torBadge.className = "badge badge-tor-disabled";
+      }
+    }
+
+    intensitySelector.querySelectorAll(".intensity-btn").forEach(function (btn) {
+      btn.classList.toggle("active", btn.dataset.level === status.intensity);
+    });
   }
 
   // Report real viewport dimensions for fingerprint matching
@@ -377,5 +405,4 @@
 
   // Initial load + start polling
   poll();
-  pollInterval = setInterval(poll, 5000);
 })();
