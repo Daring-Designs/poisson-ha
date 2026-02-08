@@ -17,6 +17,7 @@ from engines.browse import BrowseEngine
 from engines.dns import DNSEngine
 from engines.research import ResearchEngine
 from engines.search import SearchEngine
+from engines.tor import TorEngine
 from scheduler import Scheduler
 from session import SessionManager
 
@@ -51,6 +52,7 @@ async def main():
         ("ad_clicks", AdClickEngine(session_manager=session_mgr), config.get("enable_ad_clicks", False)),
         ("dns", DNSEngine(), config.get("enable_dns_noise", True)),
         ("research", ResearchEngine(session_manager=session_mgr), config.get("enable_research_noise", False)),
+        ("tor", TorEngine(session_manager=session_mgr), config.get("enable_tor", False)),
     ]
     for name, engine, enabled in engines:
         engine.enabled = enabled

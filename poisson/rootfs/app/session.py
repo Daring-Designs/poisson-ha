@@ -71,11 +71,15 @@ class SessionManager:
             await self._playwright.stop()
         logger.info("Browser shut down")
 
-    async def new_session(self) -> "BrowsingSession":
-        """Create a new browsing session with a fresh persona."""
+    async def new_session(self, proxy: Optional[str] = None) -> "BrowsingSession":
+        """Create a new browsing session with a fresh persona.
+
+        Args:
+            proxy: Optional proxy server URL (e.g. "socks5://127.0.0.1:9050" for Tor).
+        """
         await self._semaphore.acquire()
         persona = self._personas.select()
-        context = await self._create_context(persona)
+        context = await self._create_context(persona, proxy=proxy)
         self._active_contexts.append(context)
         page = await context.new_page()
         return BrowsingSession(
@@ -97,9 +101,11 @@ class SessionManager:
         finally:
             self._semaphore.release()
 
-    async def _create_context(self, persona: Persona) -> BrowserContext:
+    async def _create_context(
+        self, persona: Persona, proxy: Optional[str] = None
+    ) -> BrowserContext:
         """Create a browser context configured with the given persona."""
-        context = await self._browser.new_context(
+        ctx_kwargs = dict(
             user_agent=persona.user_agent,
             viewport={"width": persona.viewport_width, "height": persona.viewport_height},
             locale=persona.languages[0] if persona.languages else "en-US",
@@ -108,6 +114,9 @@ class SessionManager:
                 "Accept-Language": ", ".join(persona.languages),
             },
         )
+        if proxy:
+            ctx_kwargs["proxy"] = {"server": proxy}
+        context = await self._browser.new_context(**ctx_kwargs)
         # Block unnecessary resources to save bandwidth
         await context.route("**/*.{png,jpg,jpeg,gif,svg,ico,woff,woff2,ttf}", lambda route: route.abort())
         return context

@@ -172,9 +172,9 @@ class Scheduler:
 
         # Map chain states to engine preferences
         state_engine_map = {
-            "reading": ["browse", "search"],
+            "reading": ["browse", "research", "tor", "search"],
             "clicking": ["browse", "search"],
-            "searching": ["search", "browse"],
+            "searching": ["search", "tor", "browse"],
             "idle": ["dns"],
             "landing": ["browse", "search", "dns"],
         }
