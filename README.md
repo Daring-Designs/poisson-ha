@@ -53,7 +53,7 @@ https://github.com/Daring-Designs/poisson
 
 **Is this legal?** Yes. Poisson only visits public websites, makes search queries, resolves DNS, and optionally uses Tor — all legal activities.
 
-**Will this slow my internet?** At default settings (medium, 10 Mbps cap), impact is minimal. Adjust to match your connection.
+**Will this slow my internet?** At default settings (medium, 50 MB/hr cap), impact is minimal. Adjust to match your connection.
 
 **Does this actually work?** Mass surveillance depends on patterns being meaningful. Diverse, realistic noise raises the cost and lowers the accuracy of profiling. Same principle as radar chaff.
 
