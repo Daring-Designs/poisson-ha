@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+- Expanded README with full add-on details and browser extension documentation
+- Fix stale bandwidth references in DOCS.md
+
 ## 0.1.3
 - Fix AppArmor profile blocking container startup
 
