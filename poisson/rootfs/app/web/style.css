@@ -284,10 +284,7 @@ main {
   font-weight: 600;
 }
 
-.badge-ext-on { background: rgba(52, 208, 88, 0.15); color: var(--green); }
-.badge-ext-off { background: rgba(139, 143, 163, 0.15); color: var(--text-dim); }
-
-.ext-detail {
+.ext-description {
   font-size: 0.75rem;
   color: var(--text-dim);
 }
@@ -369,115 +366,6 @@ main {
   margin-bottom: 16px;
   line-height: 1.5;
 }
-
-.setup-steps {
-  list-style: none;
-  counter-reset: step;
-  padding: 0;
-}
-
-.setup-steps li {
-  counter-increment: step;
-  position: relative;
-  padding: 10px 0 10px 36px;
-  font-size: 0.82rem;
-  line-height: 1.5;
-  border-bottom: 1px solid var(--border);
-}
-
-.setup-steps li:last-child { border-bottom: none; }
-
-.setup-steps li::before {
-  content: counter(step);
-  position: absolute;
-  left: 0;
-  top: 10px;
-  width: 22px;
-  height: 22px;
-  background: var(--accent-dim);
-  color: var(--accent);
-  border-radius: 50%;
-  font-size: 0.7rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.setup-steps code {
-  background: var(--bg);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.78rem;
-  font-family: var(--mono);
-}
-
-.step-hint {
-  display: block;
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  margin-top: 4px;
-}
-
-.ext-download-btn {
-  display: inline-block;
-  padding: 8px 16px;
-  background: var(--accent);
-  color: #fff;
-  text-decoration: none;
-  border-radius: var(--radius);
-  font-weight: 600;
-  font-size: 0.82rem;
-  transition: opacity 0.15s;
-}
-
-.ext-download-btn:hover { opacity: 0.85; }
-
-.step-url-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 8px 10px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  flex-wrap: wrap;
-}
-
-.step-url-box label {
-  font-size: 0.68rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-}
-
-.step-url-box code {
-  flex: 1;
-  font-size: 0.72rem;
-  color: var(--accent);
-  background: none;
-  padding: 0;
-  word-break: break-all;
-  min-width: 0;
-}
-
-.copy-btn {
-  padding: 4px 10px;
-  background: var(--accent-dim);
-  color: var(--accent);
-  border: none;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: opacity 0.15s;
-}
-
-.copy-btn:hover { opacity: 0.85; }
 
 .how-it-works {
   background: var(--bg);

@@ -251,38 +251,11 @@
     }
   });
 
-  // --- Extension status ---
-  var extStatus = document.getElementById("ext-status");
-  var extDetail = document.getElementById("ext-detail");
+  // --- Extension modal ---
   var extSetupBtn = document.getElementById("ext-setup-btn");
   var extModal = document.getElementById("ext-modal");
   var modalClose = document.getElementById("modal-close");
 
-  async function updateExtStatus() {
-    var data = await fetchJSON("papi/ext/status");
-    if (!data) return;
-
-    if (data.connected) {
-      extStatus.textContent = "Connected";
-      extStatus.className = "badge badge-ext-on";
-      var detail = "v" + (data.version || "?");
-      if (data.actions_completed > 0) {
-        detail += " \u2022 " + data.actions_completed + " actions";
-      }
-      if (data.has_fingerprint) {
-        detail += " \u2022 Fingerprint captured";
-      }
-      extDetail.textContent = detail;
-      extSetupBtn.textContent = "Setup Guide";
-    } else {
-      extStatus.textContent = "Not Connected";
-      extStatus.className = "badge badge-ext-off";
-      extDetail.textContent = "Generate noise from your real browser with logged-in sessions";
-      extSetupBtn.textContent = "Setup Guide";
-    }
-  }
-
-  // Modal logic
   if (extSetupBtn && extModal) {
     extSetupBtn.addEventListener("click", function () {
       extModal.classList.remove("hidden");
@@ -295,33 +268,6 @@
         extModal.classList.add("hidden");
       }
     });
-  }
-
-  // Compute the external-accessible Poisson URL for the extension.
-  // The dashboard loads via HA ingress at a path like:
-  //   /hassio/ingress/<addon_id>/
-  // The actual API proxy is at:
-  //   /api/hassio/ingress/<addon_id>/
-  // The extension needs the full URL so it works from any network.
-  var poissonUrlEl = document.getElementById("ext-poisson-url");
-  var copyUrlBtn = document.getElementById("copy-url-btn");
-  if (poissonUrlEl) {
-    var path = window.location.pathname.replace(/\/$/, "");
-    // Convert frontend path (/hassio/ingress/xxx) to API proxy path (/api/hassio/ingress/xxx)
-    var apiPath = path.startsWith("/hassio/ingress/")
-      ? "/api" + path
-      : path;
-    var poissonUrl = window.location.origin + apiPath;
-    poissonUrlEl.textContent = poissonUrl;
-
-    if (copyUrlBtn) {
-      copyUrlBtn.addEventListener("click", function () {
-        navigator.clipboard.writeText(poissonUrl).then(function () {
-          copyUrlBtn.textContent = "Copied!";
-          setTimeout(function () { copyUrlBtn.textContent = "Copy"; }, 2000);
-        });
-      });
-    }
   }
 
   // --- Polling loop with backoff ---
@@ -351,7 +297,7 @@
     }
     // Process the status response we already have
     updateStatusFromData(status);
-    await Promise.all([updateStats(), updateActivity(), updateEngines(), updateExtStatus(), updateEngineStats(), updateChart()]);
+    await Promise.all([updateStats(), updateActivity(), updateEngines(), updateEngineStats(), updateChart()]);
     schedulePoll();
   }
 

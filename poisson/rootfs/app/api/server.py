@@ -8,9 +8,7 @@ Security model:
 - A random API key is generated at startup.
 - Dashboard gets the key embedded in index.html (served through HA ingress,
   which already authenticates the user session).
-- Extension receives the key on registration (also through HA ingress).
 - All subsequent API calls must include X-Api-Key header.
-- Extension registration only requires a Bearer token (validated by HA ingress).
 
 Read-only endpoints:
 - GET /papi/status — overall status
@@ -23,27 +21,19 @@ State-changing endpoints (require API key):
 - POST /papi/intensity — change intensity level
 - GET /papi/config — current configuration
 - POST /papi/fingerprint — receive real browser viewport dimensions
-
-Extension endpoints (require API key, except register):
-- POST /papi/ext/register — extension registration (Bearer token only)
-- POST /papi/ext/heartbeat — extension alive check
-- POST /papi/ext/fingerprint — deep fingerprint data
-- GET /papi/ext/next-task — get next noise action for extension
-- GET /papi/ext/download — download extension zip
-- GET /papi/ext/status — extension connection status for dashboard
 """
 
 import asyncio
 import json
 import logging
 import pathlib
+import secrets
 import time
 from collections import defaultdict
 from typing import Optional
 
 from aiohttp import web
 
-from api.ext_handler import ExtensionManager
 from patterns.personas import Persona, PersonaRotator
 
 logger = logging.getLogger(__name__)
@@ -68,7 +58,7 @@ class APIServer:
         self._port = port
         self._persona_rotator = persona_rotator
         self._fingerprint_captured = False
-        self._ext = ExtensionManager(config, persona_rotator)
+        self._api_key = secrets.token_urlsafe(32)
         self._app = web.Application(
             middlewares=[self._security_headers_middleware],
             client_max_size=64 * 1024,  # 64 KB max request body
@@ -102,23 +92,18 @@ class APIServer:
         self._app.router.add_post("/papi/intensity", self._handle_intensity)
         self._app.router.add_get("/papi/config", self._handle_config)
         self._app.router.add_post("/papi/fingerprint", self._handle_fingerprint)
-        # Extension endpoints
-        self._app.router.add_post("/papi/ext/register", self._handle_ext_register)
-        self._app.router.add_post("/papi/ext/heartbeat", self._handle_ext_heartbeat)
-        self._app.router.add_post("/papi/ext/fingerprint", self._handle_ext_fingerprint)
-        self._app.router.add_get("/papi/ext/next-task", self._handle_ext_next_task)
-        self._app.router.add_get("/papi/ext/download", self._handle_ext_download)
-        self._app.router.add_get("/papi/ext/status", self._handle_ext_status)
-        # Serve static UI files (exclude extension/ directory)
+        # Serve static UI files
         self._app.router.add_get("/", self._handle_index)
-        self._app.router.add_get("/{path:(?!extension/).*}", self._handle_static)
+        self._app.router.add_get("/{path:.*}", self._handle_static)
 
     # --- Auth helpers ---
 
     def _check_api_key(self, request: web.Request) -> bool:
         """Validate the API key from X-Api-Key header."""
         key = request.headers.get("X-Api-Key", "")
-        return self._ext.validate_api_key(key)
+        if not key:
+            return False
+        return secrets.compare_digest(key, self._api_key)
 
     def _require_api_key(self, request: web.Request) -> Optional[web.Response]:
         """Return a 401 response if API key is invalid, else None."""
@@ -152,7 +137,7 @@ class APIServer:
         # This is safe because HA ingress already authenticated this request.
         index_path = pathlib.Path("/app/web/index.html")
         html = index_path.read_text()
-        api_key_tag = f'<meta name="api-key" content="{self._ext.api_key}">'
+        api_key_tag = f'<meta name="api-key" content="{self._api_key}">'
         html = html.replace("</head>", f"  {api_key_tag}\n</head>")
         return web.Response(
             text=html,
@@ -223,9 +208,9 @@ class APIServer:
             return web.json_response({"status": "error"}, status=400)
 
     async def _handle_static(self, request: web.Request) -> web.Response:
-        """Serve static files from /app/web, blocking extension/ directory."""
+        """Serve static files from /app/web."""
         rel_path = request.match_info.get("path", "")
-        if not rel_path or rel_path.startswith("extension"):
+        if not rel_path:
             raise web.HTTPNotFound()
         file_path = pathlib.Path("/app/web") / rel_path
         # Resolve to prevent path traversal
@@ -399,63 +384,3 @@ class APIServer:
             k: v for k, v in self._config.items()
             if k in SAFE_CONFIG_KEYS
         })
-
-    # --- Extension endpoints ---
-
-    async def _handle_ext_register(self, request: web.Request) -> web.Response:
-        """Registration only requires a Bearer token (HA ingress validates it)."""
-        auth = request.headers.get("Authorization", "")
-        if not auth.startswith("Bearer ") or len(auth) < 10:
-            return web.json_response({"error": "Unauthorized"}, status=401)
-
-        data, err = await self._parse_json(request)
-        if err:
-            return err
-        result = self._ext.register(data)
-        return web.json_response(result)
-
-    async def _handle_ext_heartbeat(self, request: web.Request) -> web.Response:
-        auth_err = self._require_api_key(request)
-        if auth_err:
-            return auth_err
-
-        data, err = await self._parse_json(request)
-        if err:
-            return err
-        result = self._ext.heartbeat(data)
-        return web.json_response(result)
-
-    async def _handle_ext_fingerprint(self, request: web.Request) -> web.Response:
-        auth_err = self._require_api_key(request)
-        if auth_err:
-            return auth_err
-
-        data, err = await self._parse_json(request)
-        if err:
-            return err
-        result = self._ext.store_fingerprint(data)
-        return web.json_response(result)
-
-    async def _handle_ext_next_task(self, request: web.Request) -> web.Response:
-        auth_err = self._require_api_key(request)
-        if auth_err:
-            return auth_err
-        task = self._ext.generate_task()
-        return web.json_response(task)
-
-    async def _handle_ext_download(self, request: web.Request) -> web.Response:
-        # No API key required — user needs to download before they can register.
-        # HA ingress already authenticates this request.
-        zip_path = pathlib.Path("/app/web/extension.zip")
-        if not zip_path.exists():
-            return web.json_response({"error": "Extension not packaged"}, status=404)
-        return web.FileResponse(
-            zip_path,
-            headers={
-                "Content-Disposition": "attachment; filename=poisson-extension.zip",
-                "Content-Type": "application/zip",
-            },
-        )
-
-    async def _handle_ext_status(self, request: web.Request) -> web.Response:
-        return web.json_response(self._ext.get_status())

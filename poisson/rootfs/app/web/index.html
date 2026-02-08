@@ -76,11 +76,10 @@
         <div class="extension-info">
           <div class="extension-header">
             <h3>Browser Extension</h3>
-            <span id="ext-status" class="badge badge-ext-off">Not Connected</span>
           </div>
-          <p id="ext-detail" class="ext-detail">Generate noise from your real browser with logged-in sessions</p>
+          <p class="ext-description">Generate noise from your real browser with logged-in sessions</p>
         </div>
-        <button id="ext-setup-btn" class="ext-btn">Setup Guide</button>
+        <button id="ext-setup-btn" class="ext-btn">Get Extension</button>
       </div>
     </section>
 
@@ -92,11 +91,11 @@
     </section>
   </main>
 
-  <!-- Extension Setup Modal -->
+  <!-- Extension Info Modal -->
   <div id="ext-modal" class="modal-overlay hidden">
     <div class="modal">
       <div class="modal-header">
-        <h2>Browser Extension Setup</h2>
+        <h2>Browser Extension</h2>
         <button id="modal-close" class="modal-close">&times;</button>
       </div>
       <div class="modal-body">
@@ -105,40 +104,11 @@
           using your actual cookies and fingerprint. This makes fake traffic indistinguishable
           from your real browsing.
         </p>
-
-        <div class="how-it-works">
-          <h3>How it works</h3>
-          <p>The extension opens background tabs to random sites and closes them after a few
-            seconds &mdash; generating noise that uses your real cookies and fingerprint, so
-            it's indistinguishable from your actual browsing. It works alongside the add-on,
-            which generates separate noise from your HA server.</p>
-          <p>It does <strong>not</strong> read page content, collect passwords, or send cookies
-            anywhere. Auth uses HA's standard OAuth2 &mdash; the extension never sees your password.</p>
-        </div>
-
-        <h3>Installation</h3>
-        <ol class="setup-steps">
-          <li>
-            <a id="ext-download-link" href="papi/ext/download" class="ext-download-btn">Download Extension (.zip)</a>
-          </li>
-          <li>Extract the zip file to a folder on your computer</li>
-          <li>Open Chrome and go to <code>chrome://extensions</code></li>
-          <li>Enable <strong>Developer mode</strong> (toggle in top-right corner)</li>
-          <li>Click <strong>Load unpacked</strong> and select the extracted folder</li>
-          <li>Click the Poisson fish icon in your browser toolbar</li>
-          <li>
-            Paste your Poisson URL and click <strong>Sign in to Home Assistant</strong>
-            <div class="step-url-box">
-              <label>Your Poisson URL:</label>
-              <code id="ext-poisson-url">--</code>
-              <button id="copy-url-btn" class="copy-btn" title="Copy to clipboard">Copy</button>
-            </div>
-          </li>
-          <li>Log in with your HA credentials &mdash; you're done!</li>
-        </ol>
-        <p class="modal-source">
-          <a href="https://github.com/Daring-Designs/poisson/tree/main/poisson/rootfs/app/web/extension" target="_blank" rel="noopener">Review the extension source code on GitHub</a>
+        <p class="modal-intro">
+          The extension is maintained in a separate repository. Visit the link below to
+          download, view installation instructions, and review the source code.
         </p>
+        <a href="https://github.com/Daring-Designs/poisson-extension" target="_blank" rel="noopener" class="ext-btn" style="display:inline-block;text-decoration:none;text-align:center;width:100%;margin-top:8px;">View on GitHub</a>
       </div>
     </div>
   </div>
