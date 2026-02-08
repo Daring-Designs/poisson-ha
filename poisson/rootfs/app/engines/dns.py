@@ -90,7 +90,7 @@ class DNSEngine(BaseEngine):
 
         try:
             # Run DNS resolution in a thread to avoid blocking
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             await loop.run_in_executor(None, self._resolve, domain)
             self._request_count += 1
             self._last_run = time.time()

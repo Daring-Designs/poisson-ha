@@ -44,19 +44,36 @@ class PersonaRotator:
             logger.warning("Personas file not found: %s — using built-in defaults", path)
             self._personas = self._builtin_defaults()
             return
-        with open(path) as f:
-            data = yaml.safe_load(f)
-        for p in data.get("personas", []):
-            vp = p.get("viewport", {})
-            self._personas.append(Persona(
-                name=p["name"],
-                user_agent=p["user_agent"],
-                viewport_width=vp.get("width", 1920),
-                viewport_height=vp.get("height", 1080),
-                platform=p.get("platform", "Win32"),
-                languages=p.get("languages", ["en-US", "en"]),
-                timezone=p.get("timezone"),
-            ))
+        try:
+            with open(path) as f:
+                data = yaml.safe_load(f)
+            if not isinstance(data, dict):
+                logger.warning("Personas file is not a dict, using defaults")
+                self._personas = self._builtin_defaults()
+                return
+            for p in data.get("personas", []):
+                if not isinstance(p, dict):
+                    continue
+                name = p.get("name")
+                ua = p.get("user_agent")
+                if not isinstance(name, str) or not isinstance(ua, str):
+                    continue
+                vp = p.get("viewport", {})
+                if not isinstance(vp, dict):
+                    vp = {}
+                self._personas.append(Persona(
+                    name=name,
+                    user_agent=ua,
+                    viewport_width=int(vp.get("width", 1920)),
+                    viewport_height=int(vp.get("height", 1080)),
+                    platform=str(p.get("platform", "Win32")),
+                    languages=p.get("languages", ["en-US", "en"]),
+                    timezone=p.get("timezone"),
+                ))
+        except (yaml.YAMLError, OSError, ValueError, TypeError) as exc:
+            logger.warning("Failed to load personas: %s", exc)
+        if not self._personas:
+            self._personas = self._builtin_defaults()
         logger.info("Loaded %d personas", len(self._personas))
 
     def set_real_persona(self, persona: Persona):

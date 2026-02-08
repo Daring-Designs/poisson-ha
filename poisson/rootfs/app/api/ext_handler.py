@@ -7,6 +7,7 @@ to execute in the user's real browser, and stores deep fingerprint data.
 
 import logging
 import random
+import secrets
 import time
 from typing import Any, Optional
 from urllib.parse import quote_plus
@@ -78,6 +79,11 @@ TASK_WEIGHTS = {
 class ExtensionManager:
     """Manages the companion browser extension connection and task generation."""
 
+    # Max sizes for stored data to prevent memory exhaustion
+    MAX_FINGERPRINT_SIZE = 50
+    MAX_STATS_KEYS = 10
+    MAX_STRING_LEN = 500
+
     def __init__(self, config: dict, persona_rotator=None):
         self._config = config
         self._persona_rotator = persona_rotator
@@ -86,7 +92,7 @@ class ExtensionManager:
         self._last_seen: float = 0
         self._registered_at: float = 0
         self._extension_version: str = ""
-        self._token: str = ""
+        self._api_key: str = secrets.token_urlsafe(32)
         self._deep_fingerprint: dict = {}
         self._stats: dict = {}
         self._actions_completed: int = 0
@@ -98,32 +104,35 @@ class ExtensionManager:
         # Consider disconnected if no heartbeat in 5 minutes
         return (time.time() - self._last_seen) < 300
 
-    def validate_token(self, token: str) -> bool:
-        """Validate the extension's auth token.
+    @property
+    def api_key(self) -> str:
+        """The server-side API key, generated fresh each startup."""
+        return self._api_key
 
-        HA's ingress proxy already authenticates requests before they reach
-        the add-on, so we just verify a Bearer token is present. We don't
-        pin to a specific token value — that breaks on token refresh (every
-        30 min) and on disconnect/reconnect (new OAuth flow = new token).
-        """
-        return bool(token)
+    def validate_api_key(self, key: str) -> bool:
+        """Validate the server-issued API key using constant-time comparison."""
+        if not key:
+            return False
+        return secrets.compare_digest(key, self._api_key)
 
     def register(self, data: dict) -> dict:
-        """Handle extension registration."""
+        """Handle extension registration. Returns the API key for subsequent calls."""
         self._connected = True
         self._last_seen = time.time()
         self._registered_at = time.time()
-        self._extension_version = data.get("version", "unknown")
+        self._extension_version = str(data.get("version", "unknown"))[:20]
 
         fingerprint = data.get("fingerprint", {})
-        if fingerprint:
-            self._deep_fingerprint = fingerprint
-            self._update_persona_from_fingerprint(fingerprint)
+        if isinstance(fingerprint, dict):
+            self._deep_fingerprint = self._sanitize_dict(
+                fingerprint, self.MAX_FINGERPRINT_SIZE)
+            self._update_persona_from_fingerprint(self._deep_fingerprint)
 
         logger.info("Extension registered (v%s)", self._extension_version)
         return {
             "status": "ok",
             "intensity": self._config.get("intensity", "medium"),
+            "api_key": self._api_key,
         }
 
     def heartbeat(self, data: dict) -> dict:
@@ -131,8 +140,9 @@ class ExtensionManager:
         self._connected = True
         self._last_seen = time.time()
 
-        if data.get("stats"):
-            self._stats = data["stats"]
+        stats = data.get("stats")
+        if isinstance(stats, dict):
+            self._stats = self._sanitize_dict(stats, self.MAX_STATS_KEYS)
 
         if data.get("last_action"):
             self._actions_completed += 1
@@ -145,12 +155,15 @@ class ExtensionManager:
 
     def store_fingerprint(self, fingerprint: dict) -> dict:
         """Store deep fingerprint data from extension."""
+        if not isinstance(fingerprint, dict):
+            return {"status": "error", "message": "Invalid fingerprint data"}
+        fingerprint = self._sanitize_dict(fingerprint, self.MAX_FINGERPRINT_SIZE)
         self._deep_fingerprint = fingerprint
         self._update_persona_from_fingerprint(fingerprint)
         logger.info(
             "Deep fingerprint received: canvas=%s, webgl=%s, fonts=%d",
-            fingerprint.get("canvas_hash", "?")[:12],
-            fingerprint.get("webgl_renderer", "?")[:30],
+            str(fingerprint.get("canvas_hash", "?"))[:12],
+            str(fingerprint.get("webgl_renderer", "?"))[:30],
             len(fingerprint.get("fonts", [])),
         )
         return {"status": "ok"}
@@ -244,3 +257,24 @@ class ExtensionManager:
     def _pick_search_engine() -> dict:
         weights = [e["weight"] for e in SEARCH_ENGINES]
         return random.choices(SEARCH_ENGINES, weights=weights, k=1)[0]
+
+    @classmethod
+    def _sanitize_dict(cls, data: dict, max_keys: int) -> dict:
+        """Limit dict size to prevent memory exhaustion from malicious input."""
+        result = {}
+        for i, (k, v) in enumerate(data.items()):
+            if i >= max_keys:
+                break
+            key = str(k)[:cls.MAX_STRING_LEN]
+            if isinstance(v, str):
+                result[key] = v[:cls.MAX_STRING_LEN]
+            elif isinstance(v, (int, float, bool)):
+                result[key] = v
+            elif isinstance(v, list):
+                result[key] = [
+                    str(item)[:cls.MAX_STRING_LEN] if isinstance(item, str) else item
+                    for item in v[:100]
+                    if isinstance(item, (str, int, float, bool))
+                ]
+            # Skip nested dicts and other types
+        return result

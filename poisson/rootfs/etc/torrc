@@ -1,7 +1,7 @@
 # Poisson Tor Configuration
 # Minimal config for SOCKS proxy usage
 
-SocksPort 9050
+SocksPort 127.0.0.1:9050
 Log notice stdout
 DataDirectory /var/lib/tor
 

@@ -58,6 +58,7 @@ class Scheduler:
         self._engines = {}
         self._running = False
         self._task: Optional[asyncio.Task] = None
+        self._max_bytes_per_day = config.get("max_bandwidth_mbps", 10) * 1024 * 1024
 
     def register_engine(self, name: str, engine):
         """Register a traffic engine by name."""
@@ -135,6 +136,13 @@ class Scheduler:
                 if state == "leaving":
                     break
 
+                # Check bandwidth cap before dispatching
+                self._sync_bytes_from_engines()
+                if self.stats.bytes_today >= self._max_bytes_per_day:
+                    logger.info("Daily bandwidth cap reached (%d bytes), ending session",
+                                self.stats.bytes_today)
+                    break
+
                 # Dispatch to an appropriate engine based on state
                 await self._dispatch_action(state, obsession_topic)
                 self.stats.requests_today += 1
@@ -199,8 +207,15 @@ class Scheduler:
             ]
         return topics
 
+    def _sync_bytes_from_engines(self):
+        """Aggregate byte counts from all engines into stats."""
+        self.stats.bytes_today = sum(
+            eng._bytes_count for eng in self._engines.values()
+        )
+
     def get_stats(self) -> dict:
         """Return current stats as a dict for the API."""
+        self._sync_bytes_from_engines()
         return {
             "sessions_today": self.stats.sessions_today,
             "requests_today": self.stats.requests_today,

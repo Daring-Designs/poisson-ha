@@ -26,10 +26,18 @@ ENV PLAYWRIGHT_BROWSERS_PATH=/usr/lib/playwright
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 ENV CHROMIUM_PATH=/usr/bin/chromium
 
+# Create non-root user (limits blast radius of --no-sandbox Chromium exploits)
+RUN useradd -r -m -s /usr/sbin/nologin poisson \
+    && mkdir -p /data /usr/lib/playwright \
+    && chown -R poisson:poisson /data /usr/lib/playwright
+
 # Copy application
 COPY rootfs /
 
 # Set permissions
-RUN chmod a+x /etc/services.d/*/run
+RUN chmod a+x /etc/services.d/*/run \
+    && chown -R poisson:poisson /app
 
 WORKDIR /app
+ENV PYTHONPATH=/app
+USER poisson

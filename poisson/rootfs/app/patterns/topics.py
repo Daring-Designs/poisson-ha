@@ -93,12 +93,21 @@ class TopicGenerator:
         loaded = False
         if self._wordlists_dir.exists():
             for yaml_file in self._wordlists_dir.glob("*.yaml"):
-                with open(yaml_file) as f:
-                    data = yaml.safe_load(f) or {}
-                for category, terms in data.items():
-                    if isinstance(terms, list):
-                        self._topics.setdefault(category, []).extend(terms)
-                        loaded = True
+                try:
+                    with open(yaml_file) as f:
+                        data = yaml.safe_load(f)
+                    if not isinstance(data, dict):
+                        continue
+                    for category, terms in data.items():
+                        if isinstance(terms, list):
+                            # Only accept string terms
+                            valid = [t for t in terms if isinstance(t, str)]
+                            if valid:
+                                self._topics.setdefault(str(category), []).extend(valid)
+                                loaded = True
+                except (yaml.YAMLError, OSError) as exc:
+                    import logging
+                    logging.getLogger(__name__).warning("Bad wordlist %s: %s", yaml_file, exc)
 
         if not loaded:
             self._topics = dict(BUILTIN_TOPICS)

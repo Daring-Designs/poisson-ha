@@ -11,6 +11,10 @@
 
   let pollInterval = null;
 
+  // --- API key (injected into HTML by the server, authenticated via HA ingress) ---
+  const apiKeyMeta = document.querySelector('meta[name="api-key"]');
+  const API_KEY = apiKeyMeta ? apiKeyMeta.getAttribute("content") : "";
+
   // --- DOM references ---
   const statusBadge = document.getElementById("status-badge");
   const uptimeEl = document.getElementById("uptime");
@@ -38,6 +42,8 @@
 
   async function fetchJSON(path, opts) {
     try {
+      opts = opts || {};
+      opts.headers = Object.assign({"X-Api-Key": API_KEY, "X-Requested-With": "XMLHttpRequest"}, opts.headers || {});
       const res = await fetch(path, opts);
       if (!res.ok) return null;
       return await res.json();
@@ -97,7 +103,7 @@
       var eng = data.engines[name];
       var el = document.createElement("div");
       el.className = "engine-toggle" + (eng.enabled ? " active" : "");
-      el.innerHTML = '<span class="dot"></span>' + name;
+      el.innerHTML = '<span class="dot"></span>' + escapeHtml(name);
       el.addEventListener("click", function () {
         toggleEngine(name);
       });
@@ -115,7 +121,7 @@
       el.className = "activity-entry";
       el.innerHTML =
         '<span class="activity-time">' + formatTime(entry.timestamp) + "</span>" +
-        '<span class="activity-engine ' + entry.engine + '">' + entry.engine + "</span>" +
+        '<span class="activity-engine">' + escapeHtml(entry.engine) + "</span>" +
         '<span class="activity-detail">' + escapeHtml(entry.detail) + "</span>";
       activityFeed.appendChild(el);
     });
@@ -230,7 +236,7 @@
   // Report real viewport dimensions for fingerprint matching
   fetch("papi/fingerprint", {
     method: "POST",
-    headers: {"Content-Type": "application/json"},
+    headers: {"Content-Type": "application/json", "X-Api-Key": API_KEY},
     body: JSON.stringify({width: window.screen.width, height: window.screen.height})
   }).catch(function () {});
 

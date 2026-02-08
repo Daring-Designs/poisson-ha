@@ -145,6 +145,10 @@ class BrowsingSession:
 
     async def navigate(self, url: str, timeout_ms: int = 30000) -> bool:
         """Navigate to a URL, return True on success."""
+        # Only allow http/https to prevent file://, javascript:, data: attacks
+        if not url.startswith(("http://", "https://")):
+            logger.warning("Rejected non-HTTP URL: %s", url[:100])
+            return False
         try:
             response = await self.page.goto(url, timeout=timeout_ms, wait_until="domcontentloaded")
             if response:

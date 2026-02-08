@@ -4,17 +4,28 @@ from __future__ import annotations
 Endpoints use /papi/ prefix (not /api/) to avoid collision with HA's
 own /api/ namespace which its service worker intercepts.
 
+Security model:
+- A random API key is generated at startup.
+- Dashboard gets the key embedded in index.html (served through HA ingress,
+  which already authenticates the user session).
+- Extension receives the key on registration (also through HA ingress).
+- All subsequent API calls must include X-Api-Key header.
+- Extension registration only requires a Bearer token (validated by HA ingress).
+
+Read-only endpoints:
 - GET /papi/status — overall status
 - GET /papi/stats — detailed statistics
 - GET /papi/activity — recent activity feed
-- GET /papi/engines — engine status and toggles
+- GET /papi/engines — engine status
+
+State-changing endpoints (require API key):
 - POST /papi/engines/{name}/toggle — enable/disable an engine
 - POST /papi/intensity — change intensity level
 - GET /papi/config — current configuration
 - POST /papi/fingerprint — receive real browser viewport dimensions
 
-Extension endpoints (auth via Bearer token):
-- POST /papi/ext/register — extension registration + initial fingerprint
+Extension endpoints (require API key, except register):
+- POST /papi/ext/register — extension registration (Bearer token only)
 - POST /papi/ext/heartbeat — extension alive check
 - POST /papi/ext/fingerprint — deep fingerprint data
 - GET /papi/ext/next-task — get next noise action for extension
@@ -22,6 +33,7 @@ Extension endpoints (auth via Bearer token):
 - GET /papi/ext/status — extension connection status for dashboard
 """
 
+import json
 import logging
 import pathlib
 from typing import Optional
@@ -32,6 +44,15 @@ from api.ext_handler import ExtensionManager
 from patterns.personas import Persona, PersonaRotator
 
 logger = logging.getLogger(__name__)
+
+# Allowlist of config keys safe to expose publicly
+SAFE_CONFIG_KEYS = {
+    "intensity", "enable_search_noise", "enable_browse_noise",
+    "enable_ad_clicks", "enable_tor", "enable_dns_noise",
+    "enable_research_noise", "max_bandwidth_mbps",
+    "max_concurrent_sessions", "schedule_mode",
+    "match_browser_fingerprint",
+}
 
 
 class APIServer:
@@ -45,11 +66,36 @@ class APIServer:
         self._persona_rotator = persona_rotator
         self._fingerprint_captured = False
         self._ext = ExtensionManager(config, persona_rotator)
-        self._app = web.Application()
+        self._app = web.Application(
+            middlewares=[self._security_headers_middleware],
+            client_max_size=64 * 1024,  # 64 KB max request body
+        )
         self._runner: Optional[web.AppRunner] = None
         self._setup_routes()
 
+    @web.middleware
+    async def _security_headers_middleware(self, request, handler):
+        """Add security headers and CSRF protection to all responses."""
+        # CSRF: reject state-changing requests without X-Requested-With header
+        # (browsers won't send custom headers cross-origin without CORS preflight)
+        if request.method == "POST":
+            if not request.headers.get("X-Requested-With") and not request.headers.get("X-Api-Key"):
+                return web.json_response({"error": "Missing CSRF header"}, status=403)
+
+        resp = await handler(request)
+        resp.headers["X-Content-Type-Options"] = "nosniff"
+        resp.headers["X-Frame-Options"] = "SAMEORIGIN"
+        resp.headers["Referrer-Policy"] = "no-referrer"
+        resp.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; "
+            "connect-src 'self'"
+        )
+        return resp
+
     def _setup_routes(self):
+        # Dashboard read-only endpoints (API key checked for state-changing)
         self._app.router.add_get("/papi/status", self._handle_status)
         self._app.router.add_get("/papi/stats", self._handle_stats)
         self._app.router.add_get("/papi/activity", self._handle_activity)
@@ -65,9 +111,37 @@ class APIServer:
         self._app.router.add_get("/papi/ext/next-task", self._handle_ext_next_task)
         self._app.router.add_get("/papi/ext/download", self._handle_ext_download)
         self._app.router.add_get("/papi/ext/status", self._handle_ext_status)
-        # Serve static UI files
+        # Serve static UI files (exclude extension/ directory)
         self._app.router.add_get("/", self._handle_index)
-        self._app.router.add_static("/", path="/app/web", name="static")
+        self._app.router.add_get("/{path:(?!extension/).*}", self._handle_static)
+
+    # --- Auth helpers ---
+
+    def _check_api_key(self, request: web.Request) -> bool:
+        """Validate the API key from X-Api-Key header."""
+        key = request.headers.get("X-Api-Key", "")
+        return self._ext.validate_api_key(key)
+
+    def _require_api_key(self, request: web.Request) -> Optional[web.Response]:
+        """Return a 401 response if API key is invalid, else None."""
+        if not self._check_api_key(request):
+            return web.json_response({"error": "Unauthorized"}, status=401)
+        return None
+
+    @staticmethod
+    async def _parse_json(request: web.Request) -> tuple[Optional[dict], Optional[web.Response]]:
+        """Safely parse JSON body. Returns (data, None) or (None, error_response)."""
+        try:
+            data = await request.json()
+            if not isinstance(data, dict):
+                return None, web.json_response(
+                    {"error": "Expected JSON object"}, status=400)
+            return data, None
+        except (json.JSONDecodeError, ValueError):
+            return None, web.json_response(
+                {"error": "Invalid JSON"}, status=400)
+
+    # --- Index ---
 
     async def _handle_index(self, request: web.Request) -> web.Response:
         # Capture the real user's browser fingerprint from headers
@@ -75,10 +149,18 @@ class APIServer:
                 and self._config.get("match_browser_fingerprint", True)
                 and not self._fingerprint_captured):
             self._capture_fingerprint(request)
+
+        # Read index.html and inject the API key so dashboard JS can use it.
+        # This is safe because HA ingress already authenticated this request.
         index_path = pathlib.Path("/app/web/index.html")
-        resp = web.FileResponse(index_path)
-        resp.headers["Cache-Control"] = "no-cache"
-        return resp
+        html = index_path.read_text()
+        api_key_tag = f'<meta name="api-key" content="{self._ext.api_key}">'
+        html = html.replace("</head>", f"  {api_key_tag}\n</head>")
+        return web.Response(
+            text=html,
+            content_type="text/html",
+            headers={"Cache-Control": "no-cache"},
+        )
 
     def _capture_fingerprint(self, request: web.Request):
         """Build a Persona from the real user's HTTP headers."""
@@ -86,12 +168,10 @@ class APIServer:
         if not ua:
             return
 
-        # Parse Accept-Language into a list (e.g. "en-US,en;q=0.9" → ["en-US", "en"])
         accept_lang = request.headers.get("Accept-Language", "en-US,en")
         languages = [lang.split(";")[0].strip()
                      for lang in accept_lang.split(",") if lang.strip()]
 
-        # Infer platform from UA
         platform = "Win32"
         if "Macintosh" in ua or "Mac OS" in ua:
             platform = "MacIntel"
@@ -104,7 +184,6 @@ class APIServer:
         elif "iPad" in ua:
             platform = "iPad"
 
-        # Default viewport (will be updated by JS POST to /papi/fingerprint)
         width, height = 1920, 1080
         if "Mobile" in ua:
             width, height = 412, 915
@@ -122,20 +201,45 @@ class APIServer:
 
     async def _handle_fingerprint(self, request: web.Request) -> web.Response:
         """Receive real viewport dimensions from the browser JS."""
+        auth_err = self._require_api_key(request)
+        if auth_err:
+            return auth_err
+
         if not self._persona_rotator or not self._config.get("match_browser_fingerprint", True):
             return web.json_response({"status": "disabled"})
 
+        data, err = await self._parse_json(request)
+        if err:
+            return err
+
         try:
-            data = await request.json()
             width = int(data.get("width", 0))
             height = int(data.get("height", 0))
-            if width > 0 and height > 0 and self._persona_rotator._real_persona:
+            if (0 < width < 10000 and 0 < height < 10000
+                    and self._persona_rotator._real_persona):
                 self._persona_rotator._real_persona.viewport_width = width
                 self._persona_rotator._real_persona.viewport_height = height
                 logger.info("Updated real viewport: %dx%d", width, height)
             return web.json_response({"status": "ok"})
-        except Exception:
+        except (ValueError, TypeError):
             return web.json_response({"status": "error"}, status=400)
+
+    async def _handle_static(self, request: web.Request) -> web.Response:
+        """Serve static files from /app/web, blocking extension/ directory."""
+        rel_path = request.match_info.get("path", "")
+        if not rel_path or rel_path.startswith("extension"):
+            raise web.HTTPNotFound()
+        file_path = pathlib.Path("/app/web") / rel_path
+        # Resolve to prevent path traversal
+        try:
+            file_path = file_path.resolve()
+            if not str(file_path).startswith("/app/web/"):
+                raise web.HTTPNotFound()
+        except (OSError, ValueError):
+            raise web.HTTPNotFound()
+        if not file_path.is_file():
+            raise web.HTTPNotFound()
+        return web.FileResponse(file_path)
 
     async def start(self):
         self._runner = web.AppRunner(self._app)
@@ -147,6 +251,8 @@ class APIServer:
     async def stop(self):
         if self._runner:
             await self._runner.cleanup()
+
+    # --- Dashboard read endpoints ---
 
     async def _handle_status(self, request: web.Request) -> web.Response:
         stats = self._scheduler.get_stats()
@@ -182,11 +288,13 @@ class APIServer:
         })
 
     async def _handle_activity(self, request: web.Request) -> web.Response:
-        count = int(request.query.get("count", "50"))
+        try:
+            count = max(1, min(int(request.query.get("count", "50")), 500))
+        except (ValueError, TypeError):
+            count = 50
         activity = []
         for engine in self._scheduler._engines.values():
             activity.extend(engine.get_recent_activity(count))
-        # Sort by timestamp descending
         activity.sort(key=lambda a: a["timestamp"], reverse=True)
         return web.json_response({"activity": activity[:count]})
 
@@ -200,17 +308,30 @@ class APIServer:
         }
         return web.json_response({"engines": engines})
 
+    # --- Dashboard state-changing endpoints (require API key) ---
+
     async def _handle_engine_toggle(self, request: web.Request) -> web.Response:
+        auth_err = self._require_api_key(request)
+        if auth_err:
+            return auth_err
+
         name = request.match_info["name"]
         if name not in self._scheduler._engines:
-            return web.json_response({"error": f"Unknown engine: {name}"}, status=404)
+            return web.json_response({"error": "Unknown engine"}, status=404)
         engine = self._scheduler._engines[name]
         engine.enabled = not engine.enabled
         logger.info("Engine '%s' %s", name, "enabled" if engine.enabled else "disabled")
         return web.json_response({"name": name, "enabled": engine.enabled})
 
     async def _handle_intensity(self, request: web.Request) -> web.Response:
-        data = await request.json()
+        auth_err = self._require_api_key(request)
+        if auth_err:
+            return auth_err
+
+        data, err = await self._parse_json(request)
+        if err:
+            return err
+
         new_intensity = data.get("intensity")
         if new_intensity not in ("low", "medium", "high", "paranoid"):
             return web.json_response({"error": "Invalid intensity"}, status=400)
@@ -222,50 +343,62 @@ class APIServer:
         return web.json_response({"intensity": new_intensity})
 
     async def _handle_config(self, request: web.Request) -> web.Response:
-        # Return safe config (no secrets)
+        auth_err = self._require_api_key(request)
+        if auth_err:
+            return auth_err
+        # Allowlist only safe keys
         return web.json_response({
             k: v for k, v in self._config.items()
-            if not k.startswith("_")
+            if k in SAFE_CONFIG_KEYS
         })
 
     # --- Extension endpoints ---
 
-    def _ext_auth(self, request: web.Request) -> bool:
-        """Validate extension Bearer token."""
-        auth = request.headers.get("Authorization", "")
-        if not auth.startswith("Bearer "):
-            return False
-        token = auth[7:]
-        return self._ext.validate_token(token)
-
     async def _handle_ext_register(self, request: web.Request) -> web.Response:
-        if not self._ext_auth(request):
+        """Registration only requires a Bearer token (HA ingress validates it)."""
+        auth = request.headers.get("Authorization", "")
+        if not auth.startswith("Bearer ") or len(auth) < 10:
             return web.json_response({"error": "Unauthorized"}, status=401)
-        data = await request.json()
+
+        data, err = await self._parse_json(request)
+        if err:
+            return err
         result = self._ext.register(data)
         return web.json_response(result)
 
     async def _handle_ext_heartbeat(self, request: web.Request) -> web.Response:
-        if not self._ext_auth(request):
-            return web.json_response({"error": "Unauthorized"}, status=401)
-        data = await request.json()
+        auth_err = self._require_api_key(request)
+        if auth_err:
+            return auth_err
+
+        data, err = await self._parse_json(request)
+        if err:
+            return err
         result = self._ext.heartbeat(data)
         return web.json_response(result)
 
     async def _handle_ext_fingerprint(self, request: web.Request) -> web.Response:
-        if not self._ext_auth(request):
-            return web.json_response({"error": "Unauthorized"}, status=401)
-        data = await request.json()
+        auth_err = self._require_api_key(request)
+        if auth_err:
+            return auth_err
+
+        data, err = await self._parse_json(request)
+        if err:
+            return err
         result = self._ext.store_fingerprint(data)
         return web.json_response(result)
 
     async def _handle_ext_next_task(self, request: web.Request) -> web.Response:
-        if not self._ext_auth(request):
-            return web.json_response({"error": "Unauthorized"}, status=401)
+        auth_err = self._require_api_key(request)
+        if auth_err:
+            return auth_err
         task = self._ext.generate_task()
         return web.json_response(task)
 
     async def _handle_ext_download(self, request: web.Request) -> web.Response:
+        auth_err = self._require_api_key(request)
+        if auth_err:
+            return auth_err
         zip_path = pathlib.Path("/app/web/extension.zip")
         if not zip_path.exists():
             return web.json_response({"error": "Extension not packaged"}, status=404)

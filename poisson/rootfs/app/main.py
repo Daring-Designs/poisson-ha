@@ -9,10 +9,6 @@ import asyncio
 import logging
 import signal
 import sys
-from pathlib import Path
-
-# Ensure the app directory is on the path
-sys.path.insert(0, str(Path(__file__).parent))
 
 from api.server import APIServer
 from config import load_config
@@ -75,7 +71,7 @@ async def main():
         logger.info("Shutdown signal received")
         shutdown_event.set()
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, handle_signal)
 

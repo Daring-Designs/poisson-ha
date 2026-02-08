@@ -76,7 +76,7 @@
   function getConfig(cb) {
     chrome.storage.local.get([
       "poissonUrl", "haUrl", "accessToken", "refreshToken", "tokenExpiry",
-      "enabled", "intensity", "stats",
+      "enabled", "intensity", "stats", "apiKey",
     ], function (data) {
       cb({
         poissonUrl: data.poissonUrl || "",   // Full ingress URL for API calls
@@ -87,6 +87,7 @@
         enabled: data.enabled !== false,
         intensity: data.intensity || "medium",
         stats: data.stats || { searches: 0, pages: 0, ads: 0, today: "" },
+        apiKey: data.apiKey || "",           // Server-issued API key
       });
     });
   }
@@ -170,12 +171,17 @@
 
       // Build URL from YOUR configured Poisson ingress address
       var url = config.poissonUrl.replace(/\/$/, "") + path;
+      var headers = {
+        "Authorization": "Bearer " + token, // HA OAuth access token
+        "Content-Type": "application/json",
+      };
+      // Include server-issued API key for all non-registration calls
+      if (config.apiKey) {
+        headers["X-Api-Key"] = config.apiKey;
+      }
       var opts = {
         method: method,
-        headers: {
-          "Authorization": "Bearer " + token, // HA OAuth access token
-          "Content-Type": "application/json",
-        },
+        headers: headers,
       };
       if (body) opts.body = JSON.stringify(body);
 
@@ -286,7 +292,11 @@
 
     var clientId = chrome.identity.getRedirectURL();
     var redirectUri = chrome.identity.getRedirectURL();
-    var state = Math.random().toString(36).substring(2);
+    var stateBytes = new Uint8Array(32);
+    crypto.getRandomValues(stateBytes);
+    var state = Array.from(stateBytes, function (b) {
+      return b.toString(16).padStart(2, "0");
+    }).join("");
 
     var authUrl = haUrl + "/auth/authorize"
       + "?client_id=" + encodeURIComponent(clientId)
@@ -364,11 +374,15 @@
           chrome.storage.local.set({ connected: false });
         } else {
           console.log("[Poisson] Registered with server");
-          chrome.storage.local.set({ connected: true });
-          // Server may send back the current intensity setting
-          if (data && data.intensity) {
-            chrome.storage.local.set({ intensity: data.intensity });
+          var updates = { connected: true };
+          // Store the server-issued API key for subsequent requests
+          if (data && data.api_key) {
+            updates.apiKey = data.api_key;
           }
+          if (data && data.intensity) {
+            updates.intensity = data.intensity;
+          }
+          chrome.storage.local.set(updates);
         }
       });
 
@@ -394,7 +408,8 @@
       }
       chrome.storage.local.set({ connected: true });
       // Sync intensity from server if it was changed on the dashboard
-      if (data && data.intensity) {
+      var validIntensities = ["low", "medium", "high", "paranoid"];
+      if (data && data.intensity && validIntensities.indexOf(data.intensity) !== -1) {
         chrome.storage.local.set({ intensity: data.intensity });
       }
       // Server can remotely disable noise generation
@@ -447,10 +462,26 @@
   // The extension does NOT read any content from the opened tabs.
   // It simply opens and closes them to generate network traffic.
   // -------------------------------------------------------------------
+  function isValidNoiseUrl(url) {
+    try {
+      var parsed = new URL(url);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch (e) {
+      return false;
+    }
+  }
+
   function executeSingleNoiseTask(config, cb) {
     apiCall(config, "GET", "/papi/ext/next-task", null, function (err, task) {
       if (err || !task || !task.url) {
         console.warn("[Poisson] Failed to get task:", err);
+        if (cb) cb();
+        return;
+      }
+
+      // Validate URL scheme — only allow http/https
+      if (!isValidNoiseUrl(task.url)) {
+        console.warn("[Poisson] Rejected non-HTTP task URL:", task.url);
         if (cb) cb();
         return;
       }
@@ -465,7 +496,7 @@
         }
 
         var tabId = tab.id;
-        var delay = task.delay_ms || 8000;
+        var delay = Math.max(2000, Math.min(task.delay_ms || 8000, 120000));
 
         // Update local action counters (re-read from storage for accuracy)
         chrome.storage.local.get(["stats"], function (data) {
@@ -483,7 +514,7 @@
           setTimeout(function () {
             apiCall(config, "POST", "/papi/ext/heartbeat", {
               stats: stats,
-              last_action: { type: task.type, url: task.url },
+              last_action: { type: task.type },
             }, function () {});
 
             chrome.tabs.remove(tabId, function () {
@@ -623,6 +654,7 @@
         tokenExpiry: 0,
         poissonUrl: "",
         haUrl: "",
+        apiKey: "",
         lastAuthError: "",
       });
       sendResponse({ ok: true });

@@ -49,7 +49,9 @@ def load_config() -> dict[str, Any]:
         try:
             with open(HA_OPTIONS_PATH) as f:
                 ha_opts = json.load(f)
-            config.update(ha_opts)
+            for key in DEFAULTS:
+                if key in ha_opts:
+                    config[key] = ha_opts[key]
             logger.info("Loaded HA add-on options from %s", HA_OPTIONS_PATH)
         except (json.JSONDecodeError, OSError) as e:
             logger.warning("Failed to read HA options: %s", e)
@@ -59,7 +61,7 @@ def load_config() -> dict[str, Any]:
         env_key = f"POISSON_{key.upper()}"
         env_val = os.environ.get(env_key)
         if env_val is not None:
-            config[key] = _coerce(env_val, type(DEFAULTS[key]))
+            config[key] = _coerce(env_val, type(DEFAULTS[key]), DEFAULTS[key])
 
     logger.info(
         "Config loaded: intensity=%s, engines=[%s]",
@@ -73,12 +75,16 @@ def load_config() -> dict[str, Any]:
     return config
 
 
-def _coerce(value: str, target_type: type) -> Any:
+def _coerce(value: str, target_type: type, default: Any = None) -> Any:
     """Coerce a string environment variable to the target type."""
     if target_type is bool:
         return value.lower() in ("true", "1", "yes")
-    if target_type is int:
-        return int(value)
-    if target_type is float:
-        return float(value)
+    try:
+        if target_type is int:
+            return int(value)
+        if target_type is float:
+            return float(value)
+    except (ValueError, TypeError):
+        logger.warning("Invalid env var value '%s' for type %s, using default", value, target_type.__name__)
+        return default
     return value

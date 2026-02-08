@@ -10,6 +10,7 @@ Generates realistic search patterns including:
 import random
 import time
 from typing import Optional
+from urllib.parse import quote_plus
 
 from engines.base import BaseEngine
 from patterns.topics import TopicGenerator
@@ -43,7 +44,7 @@ class SearchEngine(BaseEngine):
 
         # Pick a search engine (weighted random)
         engine = self._pick_engine()
-        url = engine["url"].format(query=query.replace(" ", "+"))
+        url = engine["url"].format(query=quote_plus(query))
 
         self.log_activity("search", f"Searching {engine['name']} for '{query}'")
 

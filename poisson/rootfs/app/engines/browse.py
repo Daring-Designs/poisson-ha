@@ -81,9 +81,27 @@ class BrowseEngine(BaseEngine):
     def _load_sites(self):
         sites_file = DATA_DIR / "sites.yaml"
         if sites_file.exists():
-            with open(sites_file) as f:
-                data = yaml.safe_load(f) or {}
-            self._sites = data.get("categories", {})
+            try:
+                with open(sites_file) as f:
+                    data = yaml.safe_load(f)
+                if isinstance(data, dict):
+                    raw = data.get("categories", {})
+                    if isinstance(raw, dict):
+                        for cat, entries in raw.items():
+                            if not isinstance(entries, list):
+                                continue
+                            valid = []
+                            for e in entries:
+                                if (isinstance(e, dict)
+                                        and isinstance(e.get("url"), str)
+                                        and e["url"].startswith(("http://", "https://"))):
+                                    e["weight"] = float(e.get("weight", 1.0))
+                                    valid.append(e)
+                            if valid:
+                                self._sites[str(cat)] = valid
+            except (yaml.YAMLError, OSError, ValueError) as exc:
+                import logging
+                logging.getLogger(__name__).warning("Bad sites.yaml: %s", exc)
         if not self._sites:
             self._sites = dict(BUILTIN_SITES)
 

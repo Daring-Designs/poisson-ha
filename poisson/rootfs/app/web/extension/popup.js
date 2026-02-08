@@ -158,6 +158,12 @@
     if (!poissonUrl.startsWith("http")) {
       poissonUrl = "https://" + poissonUrl;
     }
+    // Reject plain HTTP — tokens must not be sent in cleartext
+    if (poissonUrl.startsWith("http://")) {
+      connectError.textContent = "HTTPS is required for security. Use https:// instead.";
+      connectError.classList.remove("hidden");
+      return;
+    }
     poissonUrl = normalizePoissonUrl(poissonUrl);
 
     connectBtn.textContent = "Signing in...";
