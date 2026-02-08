@@ -92,17 +92,12 @@
 
         <div class="how-it-works">
           <h3>How it works</h3>
-          <p>The add-on and extension are <strong>two independent noise generators</strong>.
-            The add-on runs headless Chromium on your HA server &mdash; generating volume
-            and DNS noise but without your logged-in sessions. The extension runs in your
-            real browser &mdash; periodically opening background tabs to search engines and
-            websites, then closing them after a few seconds. Since these tabs use your real
-            cookies and fingerprint, the noise is indistinguishable from your actual browsing.</p>
-          <p>The extension does <strong>not</strong> read page content, collect passwords, or
-            send cookies anywhere. It just opens and closes tabs. The only data sent to your
-            Poisson server is your browser fingerprint (so headless sessions can match it) and
-            action counts (displayed on this dashboard). Authentication uses HA's standard
-            OAuth2 &mdash; the extension never sees your password.</p>
+          <p>The extension opens background tabs to random sites and closes them after a few
+            seconds &mdash; generating noise that uses your real cookies and fingerprint, so
+            it's indistinguishable from your actual browsing. It works alongside the add-on,
+            which generates separate noise from your HA server.</p>
+          <p>It does <strong>not</strong> read page content, collect passwords, or send cookies
+            anywhere. Auth uses HA's standard OAuth2 &mdash; the extension never sees your password.</p>
         </div>
 
         <h3>Installation</h3>
