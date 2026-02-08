@@ -2,6 +2,7 @@ name: "Poisson"
 description: "Traffic noise generator. Make mass surveillance expensive and unreliable."
 version: "0.1.0"
 slug: "poisson"
+image: "ghcr.io/Daring-Designs/{arch}-addon-poisson"
 url: "https://github.com/Daring-Designs/poisson"
 arch:
   - amd64
