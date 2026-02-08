@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 SAFE_CONFIG_KEYS = {
     "intensity", "enable_search_noise", "enable_browse_noise",
     "enable_ad_clicks", "enable_tor", "enable_dns_noise",
-    "enable_research_noise", "max_bandwidth_mbps",
+    "enable_research_noise", "max_bandwidth_mb_per_hour",
     "max_concurrent_sessions", "schedule_mode",
     "match_browser_fingerprint",
 }

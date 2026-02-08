@@ -33,7 +33,7 @@ DEFAULTS = {
     "enable_tor": False,
     "enable_dns_noise": True,
     "enable_research_noise": False,
-    "max_bandwidth_mbps": 10,
+    "max_bandwidth_mb_per_hour": 50,
     "max_concurrent_sessions": 2,
     "schedule_mode": "always",
     "session_length_mean": 15.0,

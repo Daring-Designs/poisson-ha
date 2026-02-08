@@ -294,7 +294,7 @@ options:
   enable_tor: false
   enable_dns_noise: true
   enable_research_noise: false
-  max_bandwidth_mbps: 10
+  max_bandwidth_mb_per_hour: 50
   max_concurrent_sessions: 2
   schedule_mode: "always"
 schema:
@@ -305,7 +305,7 @@ schema:
   enable_tor: bool
   enable_dns_noise: bool
   enable_research_noise: bool
-  max_bandwidth_mbps: int(1,100)
+  max_bandwidth_mb_per_hour: int(1,500)
   max_concurrent_sessions: int(1,5)
   schedule_mode: list(always|home_only|away_only|custom)
 ```

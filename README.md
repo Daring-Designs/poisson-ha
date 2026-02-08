@@ -45,7 +45,7 @@ https://github.com/Daring-Designs/poisson
 | Option | Default | Description |
 |--------|---------|-------------|
 | `intensity` | `medium` | low (~18/hr), medium (~60/hr), high (~150/hr), paranoid (~300/hr) |
-| `max_bandwidth_mbps` | `10` | Bandwidth cap |
+| `max_bandwidth_mb_per_hour` | `50` | Max MB per hour (rolling window) |
 | `max_concurrent_sessions` | `2` | Simultaneous browser sessions |
 | `schedule_mode` | `always` | always, home_only, away_only, custom |
 

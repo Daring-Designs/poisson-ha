@@ -41,7 +41,7 @@ Poisson uses a **Poisson process** (a mathematical model of random events) to ge
 | `enable_ad_clicks` | `false` | Click on advertisements |
 | `enable_tor` | `false` | Tor traffic (requires understanding) |
 | `enable_research_noise` | `false` | Privacy/legal/government browsing |
-| `max_bandwidth_mbps` | `10` | Maximum bandwidth usage |
+| `max_bandwidth_mb_per_hour` | `50` | Max MB of traffic per hour (rolling window) |
 | `max_concurrent_sessions` | `2` | Simultaneous browser sessions |
 | `schedule_mode` | `always` | When to run: always, home_only, away_only, custom |
 

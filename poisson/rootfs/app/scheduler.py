@@ -59,7 +59,8 @@ class Scheduler:
         self._running = False
         self._task: Optional[asyncio.Task] = None
         self._next_session_time: Optional[float] = None
-        self._max_bytes_per_day = config.get("max_bandwidth_mbps", 10) * 1024 * 1024
+        self._max_bytes_per_hour = config.get("max_bandwidth_mb_per_hour", 50) * 1024 * 1024
+        self._hourly_bytes: list[tuple[float, int]] = []  # (timestamp, bytes) entries
 
     def register_engine(self, name: str, engine):
         """Register a traffic engine by name."""
@@ -139,11 +140,11 @@ class Scheduler:
                 if state == "leaving":
                     break
 
-                # Check bandwidth cap before dispatching
+                # Check rolling hourly bandwidth cap before dispatching
                 self._sync_bytes_from_engines()
-                if self.stats.bytes_today >= self._max_bytes_per_day:
-                    logger.info("Daily bandwidth cap reached (%d bytes), ending session",
-                                self.stats.bytes_today)
+                if self._bytes_this_hour() >= self._max_bytes_per_hour:
+                    logger.info("Hourly bandwidth cap reached (%.1f MB/hr), pausing until next hour",
+                                self._bytes_this_hour() / (1024 * 1024))
                     break
 
                 # Dispatch to an appropriate engine based on state
@@ -212,11 +213,21 @@ class Scheduler:
             ]
         return topics
 
+    def _bytes_this_hour(self) -> int:
+        """Sum bytes transferred in the last 60 minutes (rolling window)."""
+        cutoff = time.time() - 3600
+        self._hourly_bytes = [(t, b) for t, b in self._hourly_bytes if t > cutoff]
+        return sum(b for _, b in self._hourly_bytes)
+
     def _sync_bytes_from_engines(self):
         """Aggregate byte counts from all engines into stats."""
-        self.stats.bytes_today = sum(
+        current_total = sum(
             eng._bytes_count for eng in self._engines.values()
         )
+        delta = current_total - self.stats.bytes_today
+        if delta > 0:
+            self._hourly_bytes.append((time.time(), delta))
+        self.stats.bytes_today = current_total
 
     def get_stats(self) -> dict:
         """Return current stats as a dict for the API."""
@@ -225,6 +236,7 @@ class Scheduler:
             "sessions_today": self.stats.sessions_today,
             "requests_today": self.stats.requests_today,
             "bandwidth_today_mb": round(self.stats.bytes_today / (1024 * 1024), 2),
+            "bandwidth_this_hour_mb": round(self._bytes_this_hour() / (1024 * 1024), 2),
             "uptime_seconds": int(time.time() - self.stats.start_time),
             "active_sessions": self.stats.active_sessions,
             "last_event_time": self.stats.last_event_time,

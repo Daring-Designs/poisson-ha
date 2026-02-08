@@ -1,6 +1,6 @@
 name: "Poisson"
 description: "Traffic noise generator. Make mass surveillance expensive and unreliable."
-version: "0.1.0"
+version: "0.1.1"
 slug: "poisson"
 image: "ghcr.io/Daring-Designs/{arch}-addon-poisson"
 url: "https://github.com/Daring-Designs/poisson"
@@ -21,7 +21,7 @@ options:
   enable_tor: false
   enable_dns_noise: true
   enable_research_noise: false
-  max_bandwidth_mbps: 10
+  max_bandwidth_mb_per_hour: 50
   max_concurrent_sessions: 2
   match_browser_fingerprint: true
   schedule_mode: "always"
@@ -33,7 +33,7 @@ schema:
   enable_tor: "bool"
   enable_dns_noise: "bool"
   enable_research_noise: "bool"
-  max_bandwidth_mbps: "int(1,100)"
+  max_bandwidth_mb_per_hour: "int(1,500)"
   max_concurrent_sessions: "int(1,5)"
   match_browser_fingerprint: "bool"
   schedule_mode: "list(always|home_only|away_only|custom)"
