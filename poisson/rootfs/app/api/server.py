@@ -396,9 +396,8 @@ class APIServer:
         return web.json_response(task)
 
     async def _handle_ext_download(self, request: web.Request) -> web.Response:
-        auth_err = self._require_api_key(request)
-        if auth_err:
-            return auth_err
+        # No API key required — user needs to download before they can register.
+        # HA ingress already authenticates this request.
         zip_path = pathlib.Path("/app/web/extension.zip")
         if not zip_path.exists():
             return web.json_response({"error": "Extension not packaged"}, status=404)
