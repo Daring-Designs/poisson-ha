@@ -296,7 +296,6 @@ options:
   enable_research_noise: false
   max_bandwidth_mbps: 10
   max_concurrent_sessions: 2
-  tor_relay_mode: false
   schedule_mode: "always"
 schema:
   intensity: list(low|medium|high|paranoid)
@@ -308,7 +307,6 @@ schema:
   enable_research_noise: bool
   max_bandwidth_mbps: int(1,100)
   max_concurrent_sessions: int(1,5)
-  tor_relay_mode: bool
   schedule_mode: list(always|home_only|away_only|custom)
 ```
 

@@ -43,7 +43,6 @@ Poisson uses a **Poisson process** (a mathematical model of random events) to ge
 | `enable_research_noise` | `false` | Privacy/legal/government browsing |
 | `max_bandwidth_mbps` | `10` | Maximum bandwidth usage |
 | `max_concurrent_sessions` | `2` | Simultaneous browser sessions |
-| `tor_relay_mode` | `false` | Run as Tor relay |
 | `schedule_mode` | `always` | When to run: always, home_only, away_only, custom |
 
 ## Intensity Levels

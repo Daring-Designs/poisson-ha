@@ -10,21 +10,6 @@ if bashio::config.true "enable_tor"; then
     # Start with base SOCKS-only config
     cp /etc/torrc /tmp/torrc
 
-    # Append relay configuration if relay mode is enabled
-    if bashio::config.true "tor_relay_mode"; then
-        bashio::log.info "Tor relay mode enabled — adding relay config"
-        cat >> /tmp/torrc <<'RELAY'
-
-# Relay configuration
-ORPort 9001
-ExitRelay 0
-Nickname PoissonRelay
-ContactInfo poisson-addon@example.com
-RelayBandwidthRate 256 KBytes
-RelayBandwidthBurst 512 KBytes
-RELAY
-    fi
-
     bashio::log.info "Starting Tor daemon..."
     exec tor -f /tmp/torrc
 else

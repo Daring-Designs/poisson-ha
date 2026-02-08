@@ -35,7 +35,6 @@ DEFAULTS = {
     "enable_research_noise": False,
     "max_bandwidth_mbps": 10,
     "max_concurrent_sessions": 2,
-    "tor_relay_mode": False,
     "schedule_mode": "always",
     "session_length_mean": 15.0,
     "obsession_probability": 0.05,

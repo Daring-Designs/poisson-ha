@@ -40,12 +40,6 @@ configuration:
       Use your real browser's fingerprint (user agent, screen size, language)
       for noise traffic so it blends with your actual browsing. Makes it
       harder for trackers to distinguish real from fake traffic.
-  tor_relay_mode:
-    name: Tor Relay Mode
-    description: >-
-      Run as a Tor relay, routing other people's traffic through your connection.
-      This provides plausible deniability but uses more bandwidth.
-      Only enable if you understand the implications.
   schedule_mode:
     name: Schedule Mode
     description: >-
